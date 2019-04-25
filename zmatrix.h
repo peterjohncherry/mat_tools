@@ -17,6 +17,8 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     double* real_data_ptr() const { return real_mat_->data_ptr(); }
     double* imag_data_ptr() const { return imag_mat_->data_ptr(); }
     double* complex_data_ptr() const { return complex_data_.get(); }
+    std::complex<double>* stdcomplex_data_ptr() const { return stdcomplex_data_.get(); }
+
     std::complex<double> element(const int& ii, const int& jj) const {
       return std::complex<double>(real_mat_->element(ii,jj), imag_mat_->element( ii, jj) );
     }
@@ -29,6 +31,7 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
 
 
     void diagonalize_complex_routine(std::unique_ptr<ZMatrix> mat );
+    void diagonalize_stdcomplex_routine(std::unique_ptr<ZMatrix>& mat );
    
 
     std::unique_ptr<ZMatrix> ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, double factor );

@@ -7,7 +7,6 @@
 #include <complex>
 #include <algorithm>
 #include <utility>
-#include "/home/peter/UTILS/LAPACK-3.8.0/LAPACKE/include/lapacke.h"
 
 
 template<typename DataType> 

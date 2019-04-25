@@ -1,29 +1,27 @@
 #include "zmatrix.h"
+#include "/home/peter/UTILS/LAPACK-3.8.0/LAPACKE/include/lapacke.h"
 
 using namespace std;
 
 #ifndef LAPACK_CCGEVZZZZ
 #define LAPACK_CCGEVZZZZ
-extern "C++" {
+extern "C" {
   
-//  extern void cggev_( char* JOBVL, char* JOBVR, int* N, double* A, int* LDA,
-//                     double* B, int* LDB, double* ALPHA, double* BETA, double* VL,
-//                     int* LDVL, double* VR, int* LDVR, double* WORK, int LWORK,
-//                     double* RWORK, int* INFO );
 
-  extern void zggev_( char* JOBVL, char* JOBVR, int* N, complex<double>* A, int* LDA,
-                      complex<double>* B, int* LDB, complex<double>* ALPHA, complex<double>* BETA,
-                      complex<double>* VL, int* LDVL, complex<double>* VR, int* LDVR,
-                      complex<double>* WORK, int LWORK, double* RWORK, int* INFO );
+//extern int zggev_( int* matrix_layout, char* JOBVL /*1*/, char* JOBVR/*2*/, int* N/*3*/, complex<double>* A/*4*/, int* LDA/*5*/,
+//                    complex<double>* B/*6*/, int* LDB/*7*/, complex<double>* ALPHA/*8*/, complex<double>* BETA/*9*/,
+//                    complex<double>* VL/*10*/, int* LDVL/*11*/, complex<double>* VR/*12*/, int* LDVR/*13*/,
+//                    complex<double>* WORK/*14*/, int* LWORK/*15*/, double* RWORK/*16*/, int* INFO/*17*/ );
+ 
+  extern void zggev_(  char* JOBVL /*1*/, char* JOBVR/*2*/, lapack_int* N/*3*/, lapack_complex_double* A/*4*/, lapack_int* LDA/*5*/,
+                      lapack_complex_double* B/*6*/, lapack_int* LDB/*7*/, lapack_complex_double* ALPHA/*8*/, lapack_complex_double* BETA/*9*/,
+                      lapack_complex_double* VL/*10*/, lapack_int* LDVL/*11*/, lapack_complex_double* VR/*12*/, lapack_int* LDVR/*13*/,
+                      lapack_complex_double* WORK/*14*/, lapack_int* LWORK/*15*/, double* RWORK/*16*/, lapack_int* INFO/*17*/ );
   
-//  extern void zggev_( char*, char*, int*, complex<double>*, int*, complex<double>*, int*, complex<double>*,
-//                      complex<double>*, complex<double>*, int*, complex<double>*, int*, complex<double>*,
+//  extern void zggev_( char*, char*, int*, double*, int*, double*, int*, double*,
+//                      double*, double*, int*, double*, int*, double*,
 //                      int*, double*, int*);
-
- // extern void zggev_( char*, char*, int*, double*, int*, double*, int*, double*,
- //                     double*, double*, int*, double*, int*, double*,
- //                     int*, double*, int*);
- //
+ 
 
 
 }
@@ -171,7 +169,6 @@ void ZMatrix::generate_stdcomplex_data(){
 
 }
 
-
 void diagonalize_complex_routine(std::unique_ptr<ZMatrix>& mat ) {
   
    char JOBVL = 'V';
@@ -207,8 +204,70 @@ void diagonalize_complex_routine(std::unique_ptr<ZMatrix>& mat ) {
    double* RWORK = RWORK_array.get();
    int INFO = 0;
 
-//   cggev_( &JOBVL, &JOBVR, N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
+//   zggev_( &JOBVL, &JOBVR, &N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
+//           &LDVL, VR, &LDVR, WORK, &LWORK, RWORK, &INFO );
+//   zggev_( &JOBVL, &JOBVR, N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
 //           LDVL, VR, LDVR, WORK, &LWORK, RWORK, &INFO );
+
+//   subroutine cggev 	( 	character  	JOBVL,
+//		character  	JOBVR,
+//		integer  	N,
+//		complex, dimension( lda, * )  	A,
+//		integer  	LDA,
+//		complex, dimension( ldb, * )  	B,
+//		integer  	LDB,
+//		complex, dimension( * )  	ALPHA,
+//		complex, dimension( * )  	BETA,
+//		complex, dimension( ldvl, * )  	VL,
+//		integer  	LDVL,
+//		complex, dimension( ldvr, * )  	VR,
+//		integer  	LDVR,
+//		complex, dimension( * )  	WORK,
+//		integer  	LWORK,
+//		real, dimension( * )  	RWORK,
+//		integer  	INFO 
+//	) 	 
+}
+
+void diagonalize_stdcomplex_routine(std::unique_ptr<ZMatrix>& mat ) {
+  
+   char JOBVL = 'V';
+   char JOBVR = 'V';
+   int N = mat->ncols();
+   lapack_complex_double* A = (lapack_complex_double*)(mat->stdcomplex_data_ptr());
+   int LDA = mat->nrows();
+   int LDB = mat->nrows();
+
+   unique_ptr<lapack_complex_double[]> B_array = make_unique<lapack_complex_double[]>(LDB*N*2);
+   lapack_complex_double* B = B_array.get();
+
+   unique_ptr<lapack_complex_double[]> ALPHA_array = make_unique<lapack_complex_double[]>(N*2);
+   lapack_complex_double* ALPHA = ALPHA_array.get();
+
+   unique_ptr<lapack_complex_double[]> BETA_array = make_unique<lapack_complex_double[]>(N*2);
+   lapack_complex_double* BETA = BETA_array.get();
+
+   int LDVL = N;
+   int LDVR = N;
+   unique_ptr<lapack_complex_double[]> VL_array = make_unique<lapack_complex_double[]>(N*2);
+   lapack_complex_double* VL = VL_array.get();
+
+   unique_ptr<lapack_complex_double[]> VR_array = make_unique<lapack_complex_double[]>(N*2);
+   lapack_complex_double* VR = VR_array.get();
+
+   int LWORK = 3*N; // GET THIS PROPERLY
+
+   unique_ptr<lapack_complex_double[]> WORK_array = make_unique<lapack_complex_double[]>(LWORK*2);
+   lapack_complex_double* WORK = WORK_array.get();
+
+   unique_ptr<double[]> RWORK_array = make_unique<double[]>(8*N);
+   double* RWORK = RWORK_array.get();
+   int INFO = 0;
+
+   int matrix_layout = 1;
+
+   zggev_( &JOBVL, &JOBVR, &N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
+           &LDVL, VR, &LDVR, WORK, &LWORK, RWORK, &INFO );
 
 //   subroutine cggev 	( 	character  	JOBVL,
 //		character  	JOBVR,

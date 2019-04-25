@@ -1,4 +1,5 @@
 #include "rmatrix.h" 
+#include "/home/peter/UTILS/LAPACK-3.8.0/LAPACKE/include/lapacke.h"
 
 extern "C" {
 extern int dgemm_(char * transa, char * transb, int * m, int * n, int * k,
