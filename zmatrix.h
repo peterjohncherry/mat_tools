@@ -38,6 +38,7 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     std::unique_ptr<ZMatrix> ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, std::complex<double> factor );
 
     std::unique_ptr<ZMatrix> multiply( std::unique_ptr<ZMatrix>& matb );
+    void  diagonalize_stdcomplex_routine();
 
     void print();
 

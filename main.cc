@@ -46,6 +46,10 @@ int main() {
   unique_ptr<ZMatrix> cplx_d = cplx_b->multiply(cplx_a);
   cplx_d->print();
 
+  cplx_d->generate_stdcomplex_data();
+  cplx_d->diagonalize_stdcomplex_routine();
+  cout << "out " << endl;
+
   }
 
 

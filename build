@@ -1,1 +1,1 @@
-g++ matrix_base.cc rmatrix.cc zmatrix.cc main.cc --std=c++14 -llapack -lblas 
+g++  matrix_base.cc rmatrix.cc zmatrix.cc main.cc --std=c++14 -llapack -lblas -g
