@@ -15,6 +15,18 @@ extern int daxpy_( int* N, double* A, double* B, int* INCX, double* Y, int* INCY
 
 using namespace std;
 
+template<typename DataType>
+void print_array(DataType* x, const int& count, string name = "") {
+
+   cout << endl;
+   if ( name != "")
+     cout << name << endl;
+
+   for (int ii = 0; ii != count; ++ii, ++x ) {
+     cout << *x << " "; cout.flush();
+   }
+   cout << endl;
+}
 RMatrix::RMatrix(int nrows, int ncols) 
             : Matrix_Base<double>(nrows, ncols ) { 
   data_ = std::make_unique<double[]>(size_);
@@ -30,9 +42,17 @@ RMatrix::RMatrix(int nrows, int ncols, const double& init_val )
 
 RMatrix::RMatrix(int nrows, int ncols, const std::unique_ptr<double[]>& init_data ) 
             : Matrix_Base<double>(nrows, ncols ) { 
+
+  cout << "init data" << endl;
+  print_array(init_data.get(), size());
   data_ = std::make_unique<double[]>(size_);
-  data_ptr_= data_.get();
-  std::copy_n( init_data.get(), nrows_*ncols_, data_ptr_);
+  data_ptr_= data_.get(); 
+
+  cout << "data" << endl;
+  std::copy_n( init_data.get(), size(), data_.get());
+//  print_array(data_.get(), size_, "data");
+  cout << "matrix init" << endl;
+  print();
 }
 
 RMatrix::RMatrix( RMatrix& mat) 

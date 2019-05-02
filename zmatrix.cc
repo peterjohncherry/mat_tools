@@ -5,6 +5,20 @@ using namespace std;
 
 #ifndef LAPACK_CCGEVZZZZ
 #define LAPACK_CCGEVZZZZ
+
+template<typename DataType>
+void print_array(DataType* x, int count, string& name = "") {
+
+   cout << endl;
+   if ( name != "")
+     cout << name << endl;
+
+   for (int ii = 0; ii != count; ++ii, ++x ) {
+     cout << *x << " "; cout.flush();
+   }
+   cout << endl;
+}
+
 template<typename DataType>
 void print_array ( DataType* dd, int size, string name = "" ) { 
 
@@ -56,8 +70,13 @@ ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<complex<double>[]>
      *i_ptr = (*c_ptr).imag();
   } 
 
+  print_array(real_data.get(), nrows_*ncols_, "Real part"); 
+  print_array(imag_data.get(), nrows_*ncols_, "Imag part"); 
   real_mat_ = std::make_unique<RMatrix>(nrows, ncols, real_data);
   imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, imag_data);
+  cout << "real_mat_" << endl; real_mat_->print();
+  cout << "imag_mat_" << endl; imag_mat_->print();
+  
 
 };
 
@@ -77,13 +96,16 @@ ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<double[]>& init_da
      *i_ptr = *c_ptr;
   } 
 
-  real_mat_ = std::make_unique<RMatrix>(nrows, ncols );
-  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols );
+  print_array(real_data.get(), nrows_*ncols_, "Real part"); 
+  print_array(imag_data.get(), nrows_*ncols_, "Imag part"); 
+
+  real_mat_ = std::make_unique<RMatrix>(nrows, ncols, real_data );
+  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, imag_data );
+
+  cout << "real_mat_" << endl; real_mat_->print();
+  cout << "imag_mat_" << endl; imag_mat_->print();
 
 };
-
-
-
 
 void ZMatrix::set_test_elems(){ 
 
@@ -276,7 +298,7 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
    unique_ptr<double[]> VL_array;
    switch (JOBVL){ 
      case (int)'V' : 
-       VL_array = make_unique<double[]>(N*2*LDVR);
+       VL_array = make_unique<double[]>(N*2*LDVL);
        VL = (lapack_complex_double*)VL_array.get();
        break;
      case (int)'N' :
@@ -311,6 +333,9 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
    switch (JOBVR){ 
      case (int)'V' : 
        r_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VR_array );
+       print_array(VR_array.get(), nrows_*ncols_, "VR_array"); 
+       cout << " r_eigenvectors " << endl;
+       r_eigenvectors_->print();
        break;
      case (int)'N' :
        break;
@@ -321,6 +346,10 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
    switch (JOBVR){ 
      case (int)'V' : 
        l_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VL_array );
+       print_array(VL_array.get(), nrows_*ncols_, "VL_array"); 
+       cout << endl << " l_eigenvectors " << endl;
+       
+       l_eigenvectors_->print();
        break;
      case (int)'N' :
        break;
