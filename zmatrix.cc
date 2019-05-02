@@ -21,22 +21,10 @@ void print_array ( DataType* dd, int size, string name = "" ) {
 extern "C" {
   
 
-//extern int zggev_( int* matrix_layout, char* JOBVL /*1*/, char* JOBVR/*2*/, int* N/*3*/, complex<double>* A/*4*/, int* LDA/*5*/,
-//                    complex<double>* B/*6*/, int* LDB/*7*/, complex<double>* ALPHA/*8*/, complex<double>* BETA/*9*/,
-//                    complex<double>* VL/*10*/, int* LDVL/*11*/, complex<double>* VR/*12*/, int* LDVR/*13*/,
-//                    complex<double>* WORK/*14*/, int* LWORK/*15*/, double* RWORK/*16*/, int* INFO/*17*/ );
- 
   extern void zggev_(  char* JOBVL /*1*/, char* JOBVR/*2*/, lapack_int* N/*3*/, lapack_complex_double* A/*4*/, lapack_int* LDA/*5*/,
                       lapack_complex_double* B/*6*/, lapack_int* LDB/*7*/, lapack_complex_double* ALPHA/*8*/, lapack_complex_double* BETA/*9*/,
                       lapack_complex_double* VL/*10*/, lapack_int* LDVL/*11*/, lapack_complex_double* VR/*12*/, lapack_int* LDVR/*13*/,
                       lapack_complex_double* WORK/*14*/, lapack_int* LWORK/*15*/, double* RWORK/*16*/, lapack_int* INFO/*17*/ );
-  
-//  extern void zggev_( char*, char*, int*, double*, int*, double*, int*, double*,
-//                      double*, double*, int*, double*, int*, double*,
-//                      int*, double*, int*);
- 
-
-
 }
 #endif
 
@@ -46,12 +34,56 @@ ZMatrix::ZMatrix( int ncols, int nrows ): Matrix_Base<complex<double>>( nrows, n
 
 };
 
-ZMatrix::ZMatrix( int ncols, int nrows, complex<double> init_val ) 
+ZMatrix::ZMatrix( int ncols, int nrows, const complex<double>& init_val ) 
               : Matrix_Base<complex<double>>( nrows, ncols ) {
   real_mat_ = std::make_unique<RMatrix>(nrows, ncols, init_val.real() );
   imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, init_val.imag() );
 
 };
+
+ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<complex<double>[]>& init_data ) 
+              : Matrix_Base<complex<double>>( nrows, ncols ) {
+
+  std::unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
+  std::unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
+
+  double* r_ptr = real_data.get();
+  double* i_ptr = imag_data.get();
+  std::complex<double>* c_ptr = init_data.get();
+
+  for ( int ii = 0; ii != nrows*ncols; ++ii, ++r_ptr, ++i_ptr, ++c_ptr ){
+     *r_ptr = (*c_ptr).real();
+     *i_ptr = (*c_ptr).imag();
+  } 
+
+  real_mat_ = std::make_unique<RMatrix>(nrows, ncols, real_data);
+  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, imag_data);
+
+};
+
+ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<double[]>& init_data ) 
+              : Matrix_Base<complex<double>>( nrows, ncols ) {
+
+  std::unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
+  std::unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
+
+  double* r_ptr = real_data.get();
+  double* i_ptr = imag_data.get();
+  double* c_ptr = init_data.get();
+
+  for ( int ii = 0; ii != nrows*ncols; ++ii, ++r_ptr, ++i_ptr, ++c_ptr ){
+     *r_ptr = *c_ptr;
+      ++c_ptr;
+     *i_ptr = *c_ptr;
+  } 
+
+  real_mat_ = std::make_unique<RMatrix>(nrows, ncols );
+  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols );
+
+};
+
+
+
 
 void ZMatrix::set_test_elems(){ 
 
@@ -217,29 +249,6 @@ void diagonalize_complex_routine(std::unique_ptr<ZMatrix>& mat ) {
    double* RWORK = RWORK_array.get();
    int INFO = 0;
 
-//   zggev_( &JOBVL, &JOBVR, &N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
-//           &LDVL, VR, &LDVR, WORK, &LWORK, RWORK, &INFO );
-//   zggev_( &JOBVL, &JOBVR, N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
-//           LDVL, VR, LDVR, WORK, &LWORK, RWORK, &INFO );
-
-//   subroutine cggev 	( 	character  	JOBVL,
-//		character  	JOBVR,
-//		integer  	N,
-//		complex, dimension( lda, * )  	A,
-//		integer  	LDA,
-//		complex, dimension( ldb, * )  	B,
-//		integer  	LDB,
-//		complex, dimension( * )  	ALPHA,
-//		complex, dimension( * )  	BETA,
-//		complex, dimension( ldvl, * )  	VL,
-//		integer  	LDVL,
-//		complex, dimension( ldvr, * )  	VR,
-//		integer  	LDVR,
-//		complex, dimension( * )  	WORK,
-//		integer  	LWORK,
-//		real, dimension( * )  	RWORK,
-//		integer  	INFO 
-//	) 	 
 }
 
 void ZMatrix::diagonalize_stdcomplex_routine() {
@@ -298,5 +307,24 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
 
    zggev_( &JOBVL, &JOBVR, &N, A, &LDA, B, &LDB, ALPHA, BETA, VL,
            &LDVL, VR, &LDVR, WORK, &LWORK, RWORK, &INFO );
-  
+ 
+   switch (JOBVR){ 
+     case (int)'V' : 
+       r_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VR_array );
+       break;
+     case (int)'N' :
+       break;
+     default :
+       throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
+   } 
+
+   switch (JOBVR){ 
+     case (int)'V' : 
+       l_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VL_array );
+       break;
+     case (int)'N' :
+       break;
+     default :
+       throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
+   } 
 }

@@ -38,7 +38,8 @@ class RMatrix : public Matrix_Base<double>  {
   
     RMatrix( RMatrix& mat);
     RMatrix(int nrows, int ncols );
-    RMatrix(int nrows, int ncols, double init_val );
+    RMatrix(int nrows, int ncols, const double& init_val );
+    RMatrix(int nrows, int ncols, const std::unique_ptr<double[]>& init_data );
   
     ~RMatrix(){};
 

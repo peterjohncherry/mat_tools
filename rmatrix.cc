@@ -21,11 +21,18 @@ RMatrix::RMatrix(int nrows, int ncols)
   data_ptr_= data_.get();
 }
 
-RMatrix::RMatrix(int nrows, int ncols, double init_val ) 
+RMatrix::RMatrix(int nrows, int ncols, const double& init_val ) 
             : Matrix_Base<double>(nrows, ncols ) { 
   data_ = std::make_unique<double[]>(size_);
   data_ptr_= data_.get();
   std::fill_n( data_.get(), size_, init_val );
+}
+
+RMatrix::RMatrix(int nrows, int ncols, const std::unique_ptr<double[]>& init_data ) 
+            : Matrix_Base<double>(nrows, ncols ) { 
+  data_ = std::make_unique<double[]>(size_);
+  data_ptr_= data_.get();
+  std::copy_n( init_data.get(), nrows_*ncols_, data_ptr_);
 }
 
 RMatrix::RMatrix( RMatrix& mat) 

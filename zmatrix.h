@@ -9,6 +9,9 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     std::unique_ptr<double[]> complex_data_;
     std::unique_ptr<std::complex<double>[]> stdcomplex_data_;
 
+    std::unique_ptr<ZMatrix> r_eigenvectors_;
+    std::unique_ptr<ZMatrix> l_eigenvectors_;
+
   public : 
    
     void generate_complex_data();
@@ -43,7 +46,9 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     void print();
 
     ZMatrix( int ncols, int nrows );
-    ZMatrix( int ncols, int nrows, std::complex<double> init_val);
+    ZMatrix( int ncols, int nrows, const std::complex<double>& init_val);
+    ZMatrix( int ncols, int nrows, const std::unique_ptr<double[]>& init_data );
+    ZMatrix( int ncols, int nrows, const std::unique_ptr<std::complex<double>[]>& init_data );
     ~ZMatrix(){};
 
 };
