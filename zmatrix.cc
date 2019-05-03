@@ -357,3 +357,38 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
        throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
    } 
 }
+
+// Combines real and imag parts into single real matrix for use with eigensolvers, 
+// [A+iB] -> [[ A  -B ]
+//           [[ B   A ] 
+void ZMatrix::generate_real_format_data(){
+
+   unique_ptr<double[]> real_format_data = make_unique<double[]>(size_*4);
+   double* r_ptr = real_mat_->data_ptr_;
+   double* i_ptr = imag_mat_->data_ptr_;
+   double* rf_ptr = real_format_data.get();
+   real_mat_->print();
+   double*  ptr = r_ptr;
+   for (int ii = 0 ; ii != real_mat_->size() ; ++ii, ++ptr ) {
+     cout << *ptr<< " " ; cout.flush();
+
+   }
+  imag_mat_->scale(-1.0);
+   for ( int ii = 0 ; ii != nrows_; ++ii, r_ptr+=ncols_, i_ptr += ncols_ ) {
+      rf_ptr = std::copy_n(r_ptr, ncols_, rf_ptr);
+      rf_ptr = std::copy_n(i_ptr, ncols_, rf_ptr);
+   }
+
+   imag_mat_->scale(-1.0);
+   r_ptr = real_mat_->data_ptr();
+   i_ptr = imag_mat_->data_ptr();
+
+   for ( int ii = 0 ; ii != nrows_; ++ii, r_ptr+=ncols_, i_ptr += ncols_ ) {
+      rf_ptr = std::copy_n(i_ptr, ncols_, rf_ptr);
+      rf_ptr = std::copy_n(r_ptr, ncols_, rf_ptr);
+   }
+
+   combined_mat_ = make_unique<RMatrix>(nrows_*2, ncols_*2, std::move(real_format_data));
+   combined_mat_->print();
+   combined_mat_->diagonalize();
+}

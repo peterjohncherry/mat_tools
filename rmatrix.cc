@@ -174,8 +174,10 @@ void RMatrix::diagonalize(){
   int N = ncols_;
   double* A = data_ptr_;
   int LDA = nrows_;
-  double WR[N];
-  double WI[N];
+  eigenvalues_real_ = make_unique<double[]> (N);
+  eigenvalues_imag_ = make_unique<double[]> (N);
+  double* WR = eigenvalues_real_.get();
+  double* WI = eigenvalues_imag_.get();
 
   int LDVL = (JOBVL == 'V' ? N : 0 ); 
   double* VL;
@@ -217,6 +219,8 @@ void RMatrix::diagonalize(){
 
   cout << "left eigenvectors " << endl;
   l_eigenvectors_->print();
+
+
 }
 
 

@@ -7,6 +7,8 @@ class RMatrix : public Matrix_Base<double>  {
   private : 
     std::unique_ptr<RMatrix> r_eigenvectors_;
     std::unique_ptr<RMatrix> l_eigenvectors_;
+    std::unique_ptr<double[]> eigenvalues_real_;
+    std::unique_ptr<double[]> eigenvalues_imag_;
    
   public : 
     double* data_ptr_;

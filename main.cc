@@ -4,8 +4,8 @@ using namespace std;
 
 int main() {
 
-  int nrows = 3;
-  int ncols = 4;
+  int nrows = 4;
+  int ncols = 5;
   double value = 4.0;
 
   cout << "real_a " << endl;
@@ -47,6 +47,8 @@ int main() {
   cplx_d->print();
 
   cplx_d->generate_stdcomplex_data();
+  cplx_d->generate_real_format_data();
+  
   cplx_d->diagonalize_stdcomplex_routine();
   cout << "out " << endl;
 

@@ -6,6 +6,7 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
   private :
     std::unique_ptr<RMatrix> real_mat_;
     std::unique_ptr<RMatrix> imag_mat_;
+    std::unique_ptr<RMatrix> combined_mat_;
     std::unique_ptr<double[]> complex_data_;
     std::unique_ptr<std::complex<double>[]> stdcomplex_data_;
 
@@ -16,6 +17,7 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
    
     void generate_complex_data();
     void generate_stdcomplex_data();
+    void generate_real_format_data();
 
     double* real_data_ptr() const { return real_mat_->data_ptr(); }
     double* imag_data_ptr() const { return imag_mat_->data_ptr(); }
@@ -31,6 +33,7 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     void hconj();
     void scale( double factor );
     void scale( std::complex<double> factor );
+
 
 
     void diagonalize_complex_routine(std::unique_ptr<ZMatrix> mat );
