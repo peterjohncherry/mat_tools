@@ -6,7 +6,6 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
   private :
     std::unique_ptr<RMatrix> real_mat_;
     std::unique_ptr<RMatrix> imag_mat_;
-    std::unique_ptr<RMatrix> combined_mat_;
     std::unique_ptr<double[]> complex_data_;
     std::unique_ptr<std::complex<double>[]> stdcomplex_data_;
 
@@ -18,10 +17,14 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     void generate_complex_data();
     void generate_stdcomplex_data();
     void generate_real_format_data();
+    std::unique_ptr<RMatrix> combined_mat_;
 
     double* real_data_ptr() const { return real_mat_->data_ptr(); }
     double* imag_data_ptr() const { return imag_mat_->data_ptr(); }
     double* complex_data_ptr() const { return complex_data_.get(); }
+
+    const std::unique_ptr<RMatrix>& combined_mat() const { return combined_mat_;}
+
     std::complex<double>* stdcomplex_data_ptr() const { return stdcomplex_data_.get(); }
 
     std::complex<double> element(const int& ii, const int& jj) const {

@@ -43,16 +43,9 @@ RMatrix::RMatrix(int nrows, int ncols, const double& init_val )
 RMatrix::RMatrix(int nrows, int ncols, const std::unique_ptr<double[]>& init_data ) 
             : Matrix_Base<double>(nrows, ncols ) { 
 
-  cout << "init data" << endl;
-  print_array(init_data.get(), size());
   data_ = std::make_unique<double[]>(size_);
   data_ptr_= data_.get(); 
-
-  cout << "data" << endl;
   std::copy_n( init_data.get(), size(), data_.get());
-//  print_array(data_.get(), size_, "data");
-  cout << "matrix init" << endl;
-  print();
 }
 
 RMatrix::RMatrix( RMatrix& mat) 
@@ -195,18 +188,35 @@ void RMatrix::diagonalize(){
   }
   int ILO = 0;
   int IHI = 0;
-  double SCALE[N];
+
+  unique_ptr<double[]> SCALE_array = make_unique<double[]>(N);
+  double* SCALE = SCALE_array.get();
+
   int INFO = 0;
   double ABNORM;
-  double RCONDE[N];
-  double RCONDV[N];
-  int LWORK = 3*N;
-  double WORK[LWORK];
-  double ABNRM;
 
+  unique_ptr<double[]> RCONDE_array = make_unique<double[]>(N);
+  std::fill_n(RCONDE_array.get(), N, 0.0);
+  double* RCONDE = RCONDE_array.get();
+
+  unique_ptr<double[]> RCONDV_array = make_unique<double[]>(N);
+  std::fill_n(RCONDV_array.get(), N, 0.0);
+  double* RCONDV = RCONDV_array.get();
+
+  int LWORK = 3*N;
+  unique_ptr<double[]> WORK_array = make_unique<double[]>(LWORK);
+  std::fill_n(WORK_array.get(), LWORK, 0.0);
+  double* WORK = WORK_array.get();
+
+  double ABNRM = 0.0;
   int* IWORK;
-  if ( SENSE != 'N' && SENSE != 'E' ) 
-    IWORK = (int*)(malloc( sizeof(int) * (2*(N -1))));
+  unique_ptr<int[]> IWORK_array;
+
+  if ( SENSE != 'N' && SENSE != 'E' ) {
+    IWORK_array =  make_unique<int[]>(2*(N -1));
+    std::fill_n(IWORK_array.get(), N, 0);
+    IWORK = IWORK_array.get();
+  }
  
   dgeevx_( &BALANC, &JOBVL, &JOBVR, &SENSE, &N,   // args 1-5
            A, &LDA, WR, WI, VL,                   // args 6-10

@@ -27,6 +27,10 @@ int main() {
   cout << "diagonalizing real_c" << endl;
   real_c->diagonalize(); 
 
+  cout << "real_d" << endl;
+  unique_ptr<RMatrix> real_d = *real_a + real_a;
+  real_d->print();
+
   {
 
   unique_ptr<ZMatrix> cplx_a = make_unique<ZMatrix>( nrows, ncols ); 
@@ -51,6 +55,9 @@ int main() {
   
   cplx_d->diagonalize_stdcomplex_routine();
   cout << "out " << endl;
+
+  //const unique_ptr<RMatrix>& comb_d = cplx_d->combined_mat();
+  cplx_d->combined_mat_->diagonalize();
 
   }
 

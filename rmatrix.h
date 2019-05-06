@@ -36,8 +36,22 @@ class RMatrix : public Matrix_Base<double>  {
 
     void print();
 
+    inline std::unique_ptr<RMatrix> operator + (const std::unique_ptr<RMatrix>& y)
+    {
+       return ax_plus_b(y,1.0);
+    }
+
+    inline std::unique_ptr<RMatrix> operator - (const std::unique_ptr<RMatrix>& y)
+    {
+       return ax_plus_b(y,-1.0);
+    }
+
+    inline std::unique_ptr<RMatrix> operator * (const std::unique_ptr<RMatrix>& BB)
+    {
+       return multiply(BB);
+    }
+
     RMatrix() : Matrix_Base<double>(){};
-  
     RMatrix( RMatrix& mat);
     RMatrix(int nrows, int ncols );
     RMatrix(int nrows, int ncols, const double& init_val );
