@@ -132,15 +132,15 @@ std::unique_ptr<RMatrix> RMatrix::multiply( const unique_ptr<RMatrix>& matrix_b 
 }
 
 unique_ptr<double[]> 
-RMatrix::matvec_mult_lapack( unique_ptr<double[]>& vec ){
+RMatrix::matvec_mult_lapack( unique_ptr<RVector>& vec ){
 
-  unique_ptr<double[]> vec_out = make_unique<double[]>(nrows_);
+  unique_ptr<RVector> vec_out = make_unique<RVector>(nrows_, 0.0);
   char TRANS = 'N';
   double ALPHA = 1.0;
   double BETA  = 0.0;
 
   double* A = data_ptr_;
-  double* X = vec.get();
+  double* X = vec->data_ptr();
   double* Y = vec_out.get();
  
   int M = nrows_;
@@ -149,7 +149,7 @@ RMatrix::matvec_mult_lapack( unique_ptr<double[]>& vec ){
   int INCX = 1;
   int INCY = 1;
 
-  //dgemv_( &TRANS, &M, &N, &ALPHA, A, &LDA, X, &INCX, &BETA, Y, &INCY );
+  dgemv_( &TRANS, &M, &N, &ALPHA, A, &LDA, X, &INCX, &BETA, Y, &INCY );
   return vec_out; 
 }
 
@@ -223,6 +223,9 @@ void RMatrix::diagonalize(){
            &LDVL, VR, &LDVR, &ILO, &IHI,          // args 11-15
            SCALE, &ABNRM, RCONDE, RCONDV, WORK,   // args 16-20
            &LWORK, IWORK, &INFO );                // args 21-23
+
+  print_array(WR, N, "real_part_of_eigenvalues"); cout << endl;  
+  print_array(WI, N, "imag_part_of_eigenvalues"); cout << endl;  
 
   cout << "right eigenvectors " << endl;
   r_eigenvectors_->print();

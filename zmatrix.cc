@@ -323,9 +323,6 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
    switch (JOBVR){ 
      case (int)'V' : 
        r_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VR_array );
-       print_array(VR_array.get(), nrows_*ncols_, "VR_array"); 
-       cout << " r_eigenvectors " << endl;
-       r_eigenvectors_->print();
        break;
      case (int)'N' :
        break;
@@ -336,10 +333,6 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
    switch (JOBVL){ 
      case (int)'V' : 
        l_eigenvectors_ = make_unique<ZMatrix>( nrows_, ncols_, VL_array );
-       print_array(VL_array.get(), nrows_*ncols_, "VL_array"); 
-       cout << endl << " l_eigenvectors " << endl;
-       
-       l_eigenvectors_->print();
        break;
      case (int)'N' :
        break;
@@ -374,4 +367,6 @@ void ZMatrix::generate_real_format_data(){
    }
 
    combined_mat_ = make_unique<RMatrix>(nrows_*2, ncols_*2, std::move(real_format_data));
+   cout << "combined mat" << endl;
+   combined_mat_->print(); cout << endl;
 }

@@ -1,4 +1,5 @@
 #include "zmatrix.h"
+#include "rvector.h"
 
 using namespace std;
 
@@ -30,6 +31,8 @@ int main() {
   cout << "real_d" << endl;
   unique_ptr<RMatrix> real_d = *real_a + real_a;
   real_d->print();
+
+  unique_ptr<RVector> real_v_a = make_unique<RVector>(nrows);
 
   {
 

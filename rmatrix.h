@@ -1,6 +1,7 @@
 #ifndef __RMATRIX_H
 #define __RMATRIX_H
 #include "matrix_base.h"
+#include "rvector.h"
 
 class RMatrix : public Matrix_Base<double>  {
   
@@ -30,7 +31,7 @@ class RMatrix : public Matrix_Base<double>  {
 
     std::unique_ptr<RMatrix> ax_plus_b( const std::unique_ptr<RMatrix>& matrix_b, double factor );
     std::unique_ptr<RMatrix> multiply( const std::unique_ptr<RMatrix>& matrix_b );
-    std::unique_ptr<double[]>  matvec_mult_lapack( std::unique_ptr<double[]>& vec );
+    std::unique_ptr<double[]> matvec_mult_lapack( std::unique_ptr<RVector>& vec );
     
     void diagonalize(); 
 
