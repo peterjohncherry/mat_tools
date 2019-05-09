@@ -12,6 +12,7 @@ class RVector : public Vector_Base<double>  {
     double dot_product( const RVector& vec) const;
     inline double dot( const RVector& vec) const { return dot_product(vec);};
 
+    void scale(double x );
     void print();
 
     RVector() : Vector_Base<double>(){};

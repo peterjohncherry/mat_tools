@@ -64,7 +64,14 @@ int main() {
 
   }
 
+  unique_ptr<double[]> init_data = make_unique<double[]>(8);
+  int count = 0;
+  for ( double* ptr = init_data.get(); count != 8; ++ptr, ++count ){
+     *ptr = (double)count;
+  }
 
+  unique_ptr<RVector> testvec = make_unique<RVector>(8, init_data);
+  testvec->print();
 
   return 0;
 }
