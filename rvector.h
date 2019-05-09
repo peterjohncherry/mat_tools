@@ -4,16 +4,13 @@
 
 class RVector : public Vector_Base<double>  {
   
-  private : 
-    std::unique_ptr<double[]> data_;
-    double* data_ptr_;
-   
   public : 
     double* data_ptr() const { return data_ptr_; }
-    double  element(const int& ii) const { return *(data_ptr_+ii); }
+    double element(const int& ii) const { return *(data_ptr_+ii); }
     double* element_ptr(const int& ii) const { return data_ptr_+ii; }
 
     double dot_product( const RVector& vec) const;
+    inline double dot( const RVector& vec) const { return dot_product(vec);};
 
     void print();
 
