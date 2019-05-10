@@ -18,38 +18,46 @@ void print_array(DataType* x, const int& count, string name = "") {
 
 ZVector::ZVector( const int& size ) 
             : Vector_Base<std::complex<double>>( size ) { 
-  data_ = std::make_unique<double[]>(size_*2);
-  data_ptr_= data_.get();
+//   real_vec_ = make_unique<RVector>(size_);
+//   imag_vec_ = make_unique<RVector>(size_);
+
 }
 
 ZVector::ZVector(const int& size, const std::complex<double>& init_val ) 
             : Vector_Base<std::complex<double>>( size ) { 
-  data_ = std::make_unique<double[]>(size_*2);
-  data_ptr_= data_.get();
-  std::fill_n( std::fill_n( data_.get(), size_, init_val.real() ), size_, init_val.imag() ) ;
+  real_vec_ = make_unique<RVector>(size, init_val.real() );
+  imag_vec_ = make_unique<RVector>(size, init_val.imag() );   
 }
 
-ZVector::ZVector( const int& size, const std::unique_ptr<double[]>& init_data ) 
+ZVector::ZVector( const int& size, const std::unique_ptr<double[]>& init_real_data, 
+                                   const std::unique_ptr<double[]>& init_imag_data ) 
             : Vector_Base<std::complex<double>>( size ) { 
-  data_ = std::make_unique<double[]>(size_*2);
-  data_ptr_= data_.get(); 
-  std::copy_n( init_data.get(), size_*2, data_.get());
+   real_vec_ = make_unique<RVector>(size, init_real_data );
+   imag_vec_ = make_unique<RVector>(size, init_imag_data );
+  
 }
 
-ZVector::ZVector( ZVector& vec) 
+ZVector::ZVector( const int& size, const double* init_real_data, const double* init_imag_data ) 
+            : Vector_Base<std::complex<double>>( size ) { 
+//   real_vec_ = make_unique<RVector>(size, init_real_data );
+//   imag_vec_ = make_unique<RVector>(size, init_imag_data );
+  
+}
+
+ZVector::ZVector(const  ZVector& vec) 
             : Vector_Base<std::complex<double>>( vec.size() ) { 
-  data_ = std::make_unique<double[]>(size_);
-  data_ptr_= data_.get();
-  std::copy_n(vec.data_ptr(), size_, data_ptr_);
+
+   real_vec_ = make_unique<RVector>(*(vec.real_vec_));
+   imag_vec_ = make_unique<RVector>(*(vec.imag_vec_));
 }
 
 std::complex<double> ZVector::dot_product( const ZVector& vec ) const {
    
-   double real_part = std::inner_product(data_ptr(), data_ptr()+size_/2, vec.data_ptr(), double(0.0) );
-   real_part = std::inner_product(data_ptr()+size_/2, data_ptr()+size_, vec.data_ptr()+size_/2, real_part );
-   
-   double imag_part = std::inner_product(data_ptr(), data_ptr()+size_/2, vec.data_ptr()+size_/2, double(0.0) );
-   imag_part = std::inner_product(data_ptr()+size_/2, data_ptr()+size_, vec.data_ptr()+size_, imag_part );
+   double real_part = real_vec_->dot_product( *(vec.real_vec_));
+   real_part -= imag_vec_->dot_product( *(vec.imag_vec_));
+
+   double imag_part = real_vec_->dot_product( *(vec.imag_vec_));
+   imag_part += imag_vec_->dot_product( *(vec.real_vec_));
 
    return std::complex<double>(real_part, imag_part);
 }

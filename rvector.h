@@ -4,6 +4,10 @@
 
 class RVector : public Vector_Base<double>  {
   
+  private:
+    std::unique_ptr<double[]> data_;
+    double* data_ptr_;
+
   public : 
     double* data_ptr() const { return data_ptr_; }
     double element(const int& ii) const { return *(data_ptr_+ii); }
@@ -12,7 +16,7 @@ class RVector : public Vector_Base<double>  {
     double dot_product( const RVector& vec) const;
     inline double dot( const RVector& vec) const { return dot_product(vec);};
 
-    void scale(double x );
+    void scale( const double& factor );
     void print();
 
     RVector() : Vector_Base<double>(){};
@@ -20,6 +24,7 @@ class RVector : public Vector_Base<double>  {
     RVector(const int& size );
     RVector(const int& size, const double& init_val );
     RVector(const int& size, const std::unique_ptr<double[]>& init_data );
+    RVector(const int& size, const std::unique_ptr<RVector>& init_data ){};
   
     ~RVector(){};
 

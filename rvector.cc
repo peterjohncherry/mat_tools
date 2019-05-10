@@ -62,7 +62,7 @@ double RVector::dot_product( const RVector& vec ) const {
 
 }
 
-void RVector::scale(double factor ){
+void RVector::scale(const double& factor ){
 
   double* ptr = data_ptr_;
   for (int ii = 0 ; ii != size_; ++ii, ++ptr ){

@@ -1,5 +1,6 @@
 #include "zmatrix.h"
 #include "rvector.h"
+#include "zvector.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ int main() {
   cout << "zmatrix c = a.b" << endl;
   unique_ptr<ZMatrix> cplx_c = cplx_a->multiply(cplx_b);
   cplx_c->print();
+
   cout << "zmatrix d = b.a" << endl;
   unique_ptr<ZMatrix> cplx_d = cplx_b->multiply(cplx_a);
   cplx_d->print();
@@ -70,8 +72,12 @@ int main() {
      *ptr = (double)count;
   }
 
-  unique_ptr<RVector> testvec = make_unique<RVector>(8, init_data);
-  testvec->print();
+  unique_ptr<RVector> testrvec = make_unique<RVector>(8, init_data);
+  testrvec->print();
+  cout << endl;
+  unique_ptr<ZVector> testzvec = make_unique<ZVector>(8, init_data, init_data);
+  testzvec->print();
+
 
   return 0;
 }
