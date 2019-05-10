@@ -65,19 +65,32 @@ int main() {
   cplx_d->combined_mat_->diagonalize();
 
   }
-
-  unique_ptr<double[]> init_data = make_unique<double[]>(8);
-  int count = 0;
-  for ( double* ptr = init_data.get(); count != 8; ++ptr, ++count ){
-     *ptr = (double)count;
+  
+  {
+  int length = 8;
+  unique_ptr<double[]> init_data1 = make_unique<double[]>(length);
+  unique_ptr<double[]> init_data2 = make_unique<double[]>(length);
+  double* ptr1 = init_data1.get();
+  double* ptr2 = init_data2.get();
+  for ( int count = 0; count != length; ++ptr1, ++count, ++ptr2 ){
+     *ptr1 = (double)(count);
+     *ptr2 = (double)(count)+((double)(count)/2);
   }
 
-  unique_ptr<RVector> testrvec = make_unique<RVector>(8, init_data);
-  testrvec->print();
+  unique_ptr<RVector> testrvec1 = make_unique<RVector>(8, init_data1);
+  unique_ptr<RVector> testrvec2 = make_unique<RVector>(8, init_data2);
+  testrvec1->print();
+  testrvec2->print();
   cout << endl;
-  unique_ptr<ZVector> testzvec = make_unique<ZVector>(8, init_data, init_data);
-  testzvec->print();
-
+  
+  cout << "dot = " << testrvec1->dot_product(*testrvec2) << endl;
+  
+  unique_ptr<ZVector> testzvec1 = make_unique<ZVector>(8, init_data1, init_data2);
+  unique_ptr<ZVector> testzvec2 = make_unique<ZVector>(8, init_data2, init_data1);
+  testzvec1->print();
+  testzvec2->print();
+  cout << "dot = " << testzvec1->dot_product(*testzvec2) << endl;
+  }
 
   return 0;
 }
