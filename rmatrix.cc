@@ -129,10 +129,10 @@ std::unique_ptr<RMatrix> RMatrix::multiply( const unique_ptr<RMatrix>& matrix_b 
   return matrix_c;
 }
 
-unique_ptr<RVector> 
-RMatrix::matvec_mult_lapack( unique_ptr<RVector>& vec ){
+std::unique_ptr<RVector> 
+RMatrix::multiply( const std::unique_ptr<RVector>& vec ){
 
-  unique_ptr<RVector> vec_out = make_unique<RVector>(nrows_, 0.0);
+  std::unique_ptr<RVector> vec_out = std::make_unique<RVector>(nrows_, 0.0);
   char TRANS = 'N';
   double ALPHA = 1.0;
   double BETA  = 0.0;

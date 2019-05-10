@@ -37,7 +37,9 @@ class ZMatrix : public Matrix_Base<std::complex<double>>   {
     void scale( double factor );
     void scale( std::complex<double> factor );
 
-
+    std::unique_ptr<RMatrix> ax_plus_b( const std::unique_ptr<RMatrix>& matrix_b, double factor ) {};
+    std::unique_ptr<RMatrix> multiply( const std::unique_ptr<RMatrix>& matrix_b ) {};
+    std::unique_ptr<RVector> multiply( const std::unique_ptr<RVector>& vec ) {};
 
     void diagonalize_complex_routine(std::unique_ptr<ZMatrix> mat );
     void diagonalize_stdcomplex_routine(std::unique_ptr<ZMatrix>& mat );

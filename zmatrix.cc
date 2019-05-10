@@ -370,3 +370,9 @@ void ZMatrix::generate_real_format_data(){
    cout << "combined mat" << endl;
    combined_mat_->print(); cout << endl;
 }
+
+std::unique_ptr<ZMatrix> ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, std::complex<double> factor ) {
+
+  
+
+};
