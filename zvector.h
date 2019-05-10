@@ -17,7 +17,8 @@ class ZVector : public Vector_Base<std::complex<double>>  {
        return std::complex<double>( real_vec_->element(ii), imag_vec_->element(ii) );
     }
 
-    void print();
+    double norm() const;
+    void print() const;
     void scale( const std::complex<double>& factor ) {};
     void scale( const double& factor ) {};
 

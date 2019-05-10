@@ -55,8 +55,6 @@ RMatrix::RMatrix( RMatrix& mat)
   std::copy_n(mat.data_ptr_, size_, data_ptr_);
 }
 
-
-
 void RMatrix::set_test_elems(){ 
 
   for ( int ii = 0; ii != nrows_; ++ii ) 
@@ -233,10 +231,7 @@ void RMatrix::diagonalize(){
   cout << "left eigenvectors " << endl;
   l_eigenvectors_->print();
 
-
 }
-
-
 
 void RMatrix::symmetrize(){
   cout << " void RMatrix::symmetrize() " << endl;

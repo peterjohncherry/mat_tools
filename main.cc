@@ -84,11 +84,13 @@ int main() {
   cout << endl;
   
   cout << "dot = " << testrvec1->dot_product(*testrvec2) << endl;
+  cout << " norm v1 = " << testrvec1->norm() << endl;
   
   unique_ptr<ZVector> testzvec1 = make_unique<ZVector>(8, init_data1, init_data2);
   unique_ptr<ZVector> testzvec2 = make_unique<ZVector>(8, init_data2, init_data1);
   testzvec1->print();
   testzvec2->print();
+  cout << " norm v1 = " << testzvec1->norm() << endl;
   cout << "dot = " << testzvec1->dot_product(*testzvec2) << endl;
   }
 

@@ -70,7 +70,7 @@ void RVector::scale(const double& factor ){
   }
 }
 
-void RVector::print() {
+void RVector::print() const {
 
    for ( auto ii = 0; ii != size_; ii++ ){
        cout << element(ii) << " "; cout.flush();

@@ -20,7 +20,6 @@ ZVector::ZVector( const int& size )
             : Vector_Base<std::complex<double>>( size ) { 
 //   real_vec_ = make_unique<RVector>(size_);
 //   imag_vec_ = make_unique<RVector>(size_);
-
 }
 
 ZVector::ZVector(const int& size, const std::complex<double>& init_val ) 
@@ -34,14 +33,12 @@ ZVector::ZVector( const int& size, const std::unique_ptr<double[]>& init_real_da
             : Vector_Base<std::complex<double>>( size ) { 
    real_vec_ = make_unique<RVector>(size, init_real_data );
    imag_vec_ = make_unique<RVector>(size, init_imag_data );
-  
 }
 
 ZVector::ZVector( const int& size, const double* init_real_data, const double* init_imag_data ) 
             : Vector_Base<std::complex<double>>( size ) { 
 //   real_vec_ = make_unique<RVector>(size, init_real_data );
 //   imag_vec_ = make_unique<RVector>(size, init_imag_data );
-  
 }
 
 ZVector::ZVector(const  ZVector& vec) 
@@ -62,7 +59,10 @@ std::complex<double> ZVector::dot_product( const ZVector& vec ) const {
    return std::complex<double>(real_part, imag_part);
 }
 
-void ZVector::print() {
+double ZVector::norm() const {
+   return ( real_vec_->dot_product( *real_vec_) + imag_vec_->dot_product( *imag_vec_) );
+}
+void ZVector::print() const {
 
    for ( auto ii = 0; ii != size_; ii++ ){
        cout << element(ii) << " "; cout.flush();

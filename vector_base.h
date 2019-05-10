@@ -20,8 +20,9 @@ class Vector_Base  {
     int size() const { return size_; }
 
     virtual DataType element( const int& ii ) const = 0;
+    virtual double norm() const = 0;
     virtual void scale( const DataType& factor) = 0;
-    virtual void print() = 0;
+    virtual void print() const = 0;
     
 
     Vector_Base(){};
