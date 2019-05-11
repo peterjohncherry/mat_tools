@@ -4,11 +4,10 @@
 
 class ZVector : public Vector_Base<std::complex<double>>  {
  
-  private : 
+  public : 
+
     std::unique_ptr<RVector> real_vec_;
     std::unique_ptr<RVector> imag_vec_;
- 
-  public : 
 
     std::complex<double> dot_product( const ZVector& vec ) const;
     inline std::complex<double> dot( const ZVector& vec) const { return dot_product(vec);};
@@ -21,6 +20,10 @@ class ZVector : public Vector_Base<std::complex<double>>  {
     void print() const;
     void scale( const std::complex<double>& factor ) {};
     void scale( const double& factor ) {};
+
+    void scale( std::complex<double> factor );
+
+    std::unique_ptr<ZVector> ax_plus_b( const ZVector& vec, std::complex<double> factor );
 
     ZVector() : Vector_Base<std::complex<double>>(){};
  

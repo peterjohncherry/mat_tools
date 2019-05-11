@@ -20,6 +20,8 @@ class RVector : public Vector_Base<double>  {
     void scale( const double& factor );
     void print() const;
 
+    std::unique_ptr<RVector> ax_plus_b( const RVector& xx, double aa );
+
     RVector() : Vector_Base<double>(){};
     RVector( RVector& vec);
     RVector(const int& size );

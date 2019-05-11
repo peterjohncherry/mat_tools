@@ -43,44 +43,44 @@ extern "C" {
 #endif
 
 ZMatrix::ZMatrix( int ncols, int nrows ): Matrix_Base<complex<double>>( nrows, ncols ) {
-  real_mat_ = std::make_unique<RMatrix>(nrows, ncols);
-  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols);
+  real_mat_ = make_unique<RMatrix>(nrows, ncols);
+  imag_mat_ = make_unique<RMatrix>(nrows, ncols);
 
 };
 
 ZMatrix::ZMatrix( int ncols, int nrows, const complex<double>& init_val ) 
               : Matrix_Base<complex<double>>( nrows, ncols ) {
-  real_mat_ = std::make_unique<RMatrix>(nrows, ncols, init_val.real() );
-  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, init_val.imag() );
+  real_mat_ = make_unique<RMatrix>(nrows, ncols, init_val.real() );
+  imag_mat_ = make_unique<RMatrix>(nrows, ncols, init_val.imag() );
 
 };
 
-ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<complex<double>[]>& init_data ) 
+ZMatrix::ZMatrix( int ncols, int nrows, const unique_ptr<complex<double>[]>& init_data ) 
               : Matrix_Base<complex<double>>( nrows, ncols ) {
 
-  std::unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
-  std::unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
+  unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
+  unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
 
   double* r_ptr = real_data.get();
   double* i_ptr = imag_data.get();
-  std::complex<double>* c_ptr = init_data.get();
+  complex<double>* c_ptr = init_data.get();
 
   for ( int ii = 0; ii != nrows*ncols; ++ii, ++r_ptr, ++i_ptr, ++c_ptr ){
      *r_ptr = (*c_ptr).real();
      *i_ptr = (*c_ptr).imag();
   } 
 
-  real_mat_ = std::make_unique<RMatrix>(nrows, ncols, real_data);
-  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, imag_data);
+  real_mat_ = make_unique<RMatrix>(nrows, ncols, real_data);
+  imag_mat_ = make_unique<RMatrix>(nrows, ncols, imag_data);
   
 
 };
 
-ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<double[]>& init_data ) 
+ZMatrix::ZMatrix( int ncols, int nrows, const unique_ptr<double[]>& init_data ) 
               : Matrix_Base<complex<double>>( nrows, ncols ) {
 
-  std::unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
-  std::unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
+  unique_ptr<double[]> real_data = make_unique<double[]>(nrows*ncols);
+  unique_ptr<double[]> imag_data = make_unique<double[]>(nrows*ncols);
 
   double* r_ptr = real_data.get();
   double* i_ptr = imag_data.get();
@@ -92,8 +92,8 @@ ZMatrix::ZMatrix( int ncols, int nrows, const std::unique_ptr<double[]>& init_da
      *i_ptr = *c_ptr;
   } 
 
-  real_mat_ = std::make_unique<RMatrix>(nrows, ncols, real_data );
-  imag_mat_ = std::make_unique<RMatrix>(nrows, ncols, imag_data );
+  real_mat_ = make_unique<RMatrix>(nrows, ncols, real_data );
+  imag_mat_ = make_unique<RMatrix>(nrows, ncols, imag_data );
 
 };
 
@@ -128,27 +128,27 @@ void ZMatrix::hconj() {
 
 }
 
-std::unique_ptr<ZMatrix> ZMatrix::ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, double factor ) {
+unique_ptr<ZMatrix> ZMatrix::ax_plus_b( const unique_ptr<ZMatrix>& matrix_b, double factor ) {
 
    unique_ptr<ZMatrix> new_mat = make_unique<ZMatrix>(nrows_, ncols_);
 
-   new_mat->real_mat_ = std::move(real_mat_->ax_plus_b(matrix_b->real_mat_ , factor ));
-   new_mat->imag_mat_ = std::move(imag_mat_->ax_plus_b(matrix_b->imag_mat_ , factor ));
+   new_mat->real_mat_ = move(real_mat_->ax_plus_b(matrix_b->real_mat_ , factor ));
+   new_mat->imag_mat_ = move(imag_mat_->ax_plus_b(matrix_b->imag_mat_ , factor ));
 
-   return std::move(new_mat);
+   return move(new_mat);
 }
 
-std::unique_ptr<ZMatrix> ZMatrix::ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, complex<double> factor ) {
+unique_ptr<ZMatrix> ZMatrix::ax_plus_b( const unique_ptr<ZMatrix>& matrix_b, complex<double> factor ) {
 
    unique_ptr<ZMatrix> new_mat = make_unique<ZMatrix>(nrows_, ncols_);
 
-   new_mat->real_mat_ = std::move(real_mat_->ax_plus_b(matrix_b->real_mat_ , factor.real() ));
-   new_mat->real_mat_ = std::move(new_mat->real_mat_->ax_plus_b(matrix_b->imag_mat_ ,-(factor.imag()) ));
+   new_mat->real_mat_ = move(real_mat_->ax_plus_b(matrix_b->real_mat_ , factor.real() ));
+   new_mat->real_mat_ = move(new_mat->real_mat_->ax_plus_b(matrix_b->imag_mat_ ,-(factor.imag()) ));
 
-   new_mat->imag_mat_ = std::move(imag_mat_->ax_plus_b(matrix_b->real_mat_ , factor.imag() ));
-   new_mat->imag_mat_ = std::move(new_mat->imag_mat_->ax_plus_b(matrix_b->imag_mat_ , factor.real() ));
+   new_mat->imag_mat_ = move(imag_mat_->ax_plus_b(matrix_b->real_mat_ , factor.imag() ));
+   new_mat->imag_mat_ = move(new_mat->imag_mat_->ax_plus_b(matrix_b->imag_mat_ , factor.real() ));
 
-   return std::move(new_mat);
+   return move(new_mat);
 }
 
 void ZMatrix::scale( double factor ){
@@ -158,7 +158,7 @@ void ZMatrix::scale( double factor ){
 
 };
 
-void ZMatrix::scale( std::complex<double> factor ){
+void ZMatrix::scale( complex<double> factor ){
 
     real_mat_->scale(factor.real());
     unique_ptr<RMatrix> new_real_mat = real_mat_->ax_plus_b(imag_mat_, -factor.imag());
@@ -166,8 +166,8 @@ void ZMatrix::scale( std::complex<double> factor ){
     imag_mat_->scale(factor.real());
     unique_ptr<RMatrix> new_imag_mat = imag_mat_->ax_plus_b(real_mat_, factor.imag()/factor.real());
 
-    real_mat_ = std::move(new_real_mat);
-    imag_mat_ = std::move(new_imag_mat);
+    real_mat_ = move(new_real_mat);
+    imag_mat_ = move(new_imag_mat);
 };
 
 void ZMatrix::print() {
@@ -183,7 +183,7 @@ cout << "ZMatrix::print() " << endl;
 
 }
 
-std::unique_ptr<ZMatrix> ZMatrix::multiply( std::unique_ptr<ZMatrix>& matb ) {
+unique_ptr<ZMatrix> ZMatrix::multiply( unique_ptr<ZMatrix>& matb ) {
    cout << "orig mat in ZMatrix::multiply " << endl;
    unique_ptr<ZMatrix> matc = make_unique<ZMatrix>(nrows_, matb->ncols_);
    
@@ -199,6 +199,25 @@ std::unique_ptr<ZMatrix> ZMatrix::multiply( std::unique_ptr<ZMatrix>& matb ) {
 
 }
 
+unique_ptr<ZVector> ZMatrix::multiply( const unique_ptr<ZVector>& vec ) {
+   cout << "ZMatrix::multiply " << endl;
+   unique_ptr<ZVector> vec_out = make_unique<ZVector>(vec->size());
+   
+   {
+     unique_ptr<RVector> tmp =  real_mat_->multiply( vec->real_vec_ );
+     unique_ptr<RVector> tmp2 = imag_mat_->multiply( vec->imag_vec_ );
+     vec_out->real_vec_ = tmp->ax_plus_b( *tmp2, -1.0 );
+   } 
+
+   {
+     unique_ptr<RVector> tmp =  real_mat_->multiply( vec->imag_vec_ );
+     unique_ptr<RVector> tmp2 = imag_mat_->multiply( vec->real_vec_ );
+     vec_out->imag_vec_ = tmp->ax_plus_b( *tmp2, -1.0 );
+   }
+
+   return vec_out;
+
+}
 void ZMatrix::generate_complex_data(){
 
    complex_data_ = make_unique<double[]>( size_*2 );
@@ -216,17 +235,17 @@ void ZMatrix::generate_complex_data(){
 
 void ZMatrix::generate_stdcomplex_data(){
 
-   stdcomplex_data_ = make_unique<std::complex<double>[]>( size_);
-   std::complex<double>* c_ptr = stdcomplex_data_.get();
+   stdcomplex_data_ = make_unique<complex<double>[]>( size_);
+   complex<double>* c_ptr = stdcomplex_data_.get();
    double* r_ptr = real_mat_->data_ptr();
    double* i_ptr = imag_mat_->data_ptr();
 
    for ( int ii = 0 ; ii != size_; ++ii, ++c_ptr, ++r_ptr, ++i_ptr ) 
-     *c_ptr = std::complex<double> (*r_ptr, *i_ptr);
+     *c_ptr = complex<double> (*r_ptr, *i_ptr);
 
 }
 
-void diagonalize_complex_routine(std::unique_ptr<ZMatrix>& mat ) {
+void diagonalize_complex_routine(unique_ptr<ZMatrix>& mat ) {
   
    char JOBVL = 'N';
    char JOBVR = 'N';
@@ -294,7 +313,7 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
      case (int)'N' :
        break;
      default :
-       throw std::logic_error("ZMatrix::diagonalize JOBVL must be either 'V' or 'N' !!");
+       throw logic_error("ZMatrix::diagonalize JOBVL must be either 'V' or 'N' !!");
    } 
  
    lapack_complex_double* VR;
@@ -307,7 +326,7 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
      case (int)'N' :
        break;
      default :
-       throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
+       throw logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
    } 
    
    unique_ptr<double[]> WORK_array = make_unique<double[]>(LWORK*2);
@@ -327,7 +346,7 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
      case (int)'N' :
        break;
      default :
-       throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
+       throw logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
    } 
 
    switch (JOBVL){ 
@@ -337,7 +356,7 @@ void ZMatrix::diagonalize_stdcomplex_routine() {
      case (int)'N' :
        break;
      default :
-       throw std::logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
+       throw logic_error("ZMatrix::diagonalize JOBVR must be either 'V' or 'N' !!");
    } 
 }
 
@@ -353,8 +372,8 @@ void ZMatrix::generate_real_format_data(){
 
    //imag_mat_->scale(-1.0);
    for ( int ii = 0 ; ii != nrows_; ++ii, r_ptr+=ncols_, i_ptr += ncols_ ) {
-      rf_ptr = std::copy_n(r_ptr, ncols_, rf_ptr);
-      rf_ptr = std::copy_n(i_ptr, ncols_, rf_ptr);
+      rf_ptr = copy_n(r_ptr, ncols_, rf_ptr);
+      rf_ptr = copy_n(i_ptr, ncols_, rf_ptr);
    }
 
    imag_mat_->scale(-1.0);
@@ -362,17 +381,14 @@ void ZMatrix::generate_real_format_data(){
    i_ptr = imag_mat_->data_ptr();
 
    for ( int ii = 0 ; ii != nrows_; ++ii, r_ptr+=ncols_, i_ptr += ncols_ ) {
-      rf_ptr = std::copy_n(i_ptr, ncols_, rf_ptr);
-      rf_ptr = std::copy_n(r_ptr, ncols_, rf_ptr);
+      rf_ptr = copy_n(i_ptr, ncols_, rf_ptr);
+      rf_ptr = copy_n(r_ptr, ncols_, rf_ptr);
    }
 
-   combined_mat_ = make_unique<RMatrix>(nrows_*2, ncols_*2, std::move(real_format_data));
+   combined_mat_ = make_unique<RMatrix>(nrows_*2, ncols_*2, move(real_format_data));
    cout << "combined mat" << endl;
    combined_mat_->print(); cout << endl;
 }
 
-std::unique_ptr<ZMatrix> ax_plus_b( const std::unique_ptr<ZMatrix>& matrix_b, std::complex<double> factor ) {
 
-  
 
-};

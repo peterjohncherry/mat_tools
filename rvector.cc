@@ -16,6 +16,21 @@ extern int daxpy_( int* N, double* A, double* B, int* INCX, double* Y, int* INCY
 
 using namespace std;
 
+unique_ptr<RVector> RVector::ax_plus_b( const RVector& xx, double aa ) {
+
+  unique_ptr<RVector> vec_out = make_unique<RVector>( xx.size() );
+
+  copy_n( vec_out->data_ptr(), vec_out->size(), xx.data_ptr() ); 
+
+  int INCX =1 ;
+  int nn = vec_out->size();
+  double* x_ptr = vec_out->data_ptr();
+  double* y_ptr = data_ptr();
+  daxpy_( &nn, &aa, y_ptr, &INCX, x_ptr, &INCX );
+
+  return vec_out;
+}
+
 template<typename DataType>
 void print_array(DataType* x, const int& count, string name = "") {
 
@@ -58,7 +73,7 @@ RVector::RVector( RVector& vec)
 
 double RVector::dot_product( const RVector& vec ) const {
 
-   return std::inner_product(data_ptr(), data_ptr()+size_, vec.data_ptr(), double(0.0) );
+  return std::inner_product(data_ptr(), data_ptr()+size_, vec.data_ptr(), double(0.0) );
 
 }
 

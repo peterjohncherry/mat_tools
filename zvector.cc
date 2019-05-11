@@ -70,3 +70,48 @@ void ZVector::print() const {
    cout << endl;
 
 }
+
+unique_ptr<ZVector> ZVector::ax_plus_b( const ZVector& yy, std::complex<double> factor ) {
+
+  unique_ptr<ZVector> vec_out = make_unique<ZVector>(yy.size());
+
+  {
+  unique_ptr<RVector> tmp2;
+  {
+  unique_ptr<RVector> tmp = real_vec_->ax_plus_b( *(yy.real_vec_), factor.real() ); 
+  tmp2 = tmp->ax_plus_b( *(yy.imag_vec_), -factor.imag() ); 
+  }
+  vec_out->real_vec_ = real_vec_->ax_plus_b( *tmp2 , 1.0 ); 
+  }
+  
+  {
+  unique_ptr<RVector> tmp2;
+  {
+  unique_ptr<RVector> tmp = real_vec_->ax_plus_b( *(yy.real_vec_), factor.imag() ); 
+  tmp2 = tmp->ax_plus_b( *(yy.imag_vec_), factor.real() ); 
+  }
+  vec_out->imag_vec_ = imag_vec_->ax_plus_b( *tmp2 , 1.0 ); 
+  }  
+
+
+  return vec_out;
+}
+
+void ZVector::scale( std::complex<double> factor ) {
+
+  unique_ptr<ZVector> vec_out = make_unique<ZVector>(size_);
+
+  {
+    unique_ptr<RVector> tmp2 = make_unique<RVector>(*real_vec_);
+    tmp2->scale( factor.real() );
+    unique_ptr<RVector> tmp1 = make_unique<RVector>(*imag_vec_);
+    real_vec_= tmp2->ax_plus_b( *tmp1, -factor.imag() );
+  }
+
+  {
+    unique_ptr<RVector> tmp2 = make_unique<RVector>(*imag_vec_);
+    tmp2->scale( factor.real() );
+    unique_ptr<RVector> tmp1 = make_unique<RVector>(*real_vec_);
+    imag_vec_= tmp2->ax_plus_b( *tmp1, factor.imag() );
+  }
+}
