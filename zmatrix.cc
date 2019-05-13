@@ -22,7 +22,6 @@ void print_array(DataType* x, int count, string& name = "") {
 template<typename DataType>
 void print_array ( DataType* dd, int size, string name = "" ) { 
 
-
    cout << name << endl;
    int ii = 0; 
    while ( ii != size ) {
@@ -33,7 +32,6 @@ void print_array ( DataType* dd, int size, string name = "" ) {
 }
 
 extern "C" {
-  
 
   extern void zggev_(  char* JOBVL /*1*/, char* JOBVR/*2*/, lapack_int* N/*3*/, lapack_complex_double* A/*4*/, lapack_int* LDA/*5*/,
                       lapack_complex_double* B/*6*/, lapack_int* LDB/*7*/, lapack_complex_double* ALPHA/*8*/, lapack_complex_double* BETA/*9*/,

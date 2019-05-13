@@ -1,6 +1,7 @@
 #include "zmatrix.h"
 #include "rvector.h"
 #include "zvector.h"
+#include "davidson.h"
 
 using namespace std;
 
@@ -93,6 +94,9 @@ int main() {
   cout << " norm v1 = " << testzvec1->norm() << endl;
   cout << "dot = " << testzvec1->dot_product(*testzvec2) << endl;
   }
+
+  unique_ptr<Davidson> davidson = make_unique<Davidson>( 10, "Timmy"); 
+
 
   return 0;
 }
