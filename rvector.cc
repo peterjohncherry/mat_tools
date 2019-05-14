@@ -50,6 +50,13 @@ RVector::RVector( const int& size )
   data_ptr_= data_.get();
 }
 
+RVector::RVector(const int& size, const double* start_ptr) 
+            : Vector_Base<double>( size ) { 
+  data_ = std::make_unique<double[]>(size_);
+  data_ptr_= data_.get();
+  std::copy_n( start_ptr, size_, data_ptr_ );
+}
+
 RVector::RVector(const int& size, const double& init_val ) 
             : Vector_Base<double>( size ) { 
   data_ = std::make_unique<double[]>(size_);

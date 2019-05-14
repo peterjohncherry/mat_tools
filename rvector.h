@@ -14,8 +14,11 @@ class RVector : public Vector_Base<double>  {
     double* element_ptr(const int& ii) const { return data_ptr_+ii; }
 
     double dot_product( const RVector& vec) const;
-    inline double dot( const RVector& vec) const { return dot_product(vec);};
 
+    inline double dot( const RVector& vec) const { return dot_product(vec);};
+    inline void normalize(){ scale(1.0/std::sqrt(norm())); }
+
+    //double norm() const { return dot_product(*this)/( (double)size_ ); }
     double norm() const { return dot_product(*this); }
     void scale( const double& factor );
     void print() const;
@@ -25,6 +28,7 @@ class RVector : public Vector_Base<double>  {
     RVector() : Vector_Base<double>(){};
     RVector( RVector& vec);
     RVector(const int& size );
+    RVector(const int& size, const double* start_ptr);
     RVector(const int& size, const double& init_val );
     RVector(const int& size, const std::unique_ptr<double[]>& init_data );
     RVector(const int& size, const std::unique_ptr<RVector>& init_data ){};

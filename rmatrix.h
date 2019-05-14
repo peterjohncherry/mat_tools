@@ -32,6 +32,10 @@ class RMatrix : public Matrix_Base<double>  {
     std::unique_ptr<RMatrix> ax_plus_b( const std::unique_ptr<RMatrix>& matrix_b, double factor );
     std::unique_ptr<RMatrix> multiply( const std::unique_ptr<RMatrix>& matrix_b );
     std::unique_ptr<RVector> multiply( const std::unique_ptr<RVector>& vec );
+
+    std::unique_ptr<RVector> extract_column(const int& ncol ) const ; 
+    std::unique_ptr<RMatrix> get_sub_matrix( const int& leftmost_col, const int& rightmost_col,
+                                             const int& top_row, const int& bottom_row ) const;
     
     void diagonalize(); 
 

@@ -4,16 +4,18 @@
 #include "zvector.h"
 #include "solver.h"
 
-class Davidson : public Solver {
+class Davidson : public Solver<double> {
 
   public :
-      void solve(){}
-      
-      Davidson(int max_it, std::string name): Solver(max_it, name) {
-        std::cout << "Initialized solver " << name_ << std::endl;         
-      }
-      ~Davidson(){};
- };
+ 
+    std::unique_ptr<RMatrix> mat_;
 
+    void solve();
+    
+    Davidson(int max_it, std::string name): Solver(max_it, name) {
+      std::cout << "Initialized solver " << name_ << std::endl;         
+    }
+    ~Davidson(){};
+};
 
 #endif

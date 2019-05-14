@@ -3,9 +3,6 @@
 
 using namespace std;
 
-#ifndef LAPACK_CCGEVZZZZ
-#define LAPACK_CCGEVZZZZ
-
 template<typename DataType>
 void print_array(DataType* x, int count, string& name = "") {
 
@@ -28,7 +25,6 @@ void print_array ( DataType* dd, int size, string name = "" ) {
      cout << *dd << " " ; cout.flush();
      ++ii;
    }
-
 }
 
 extern "C" {
@@ -38,7 +34,6 @@ extern "C" {
                       lapack_complex_double* VL/*10*/, lapack_int* LDVL/*11*/, lapack_complex_double* VR/*12*/, lapack_int* LDVR/*13*/,
                       lapack_complex_double* WORK/*14*/, lapack_int* LWORK/*15*/, double* RWORK/*16*/, lapack_int* INFO/*17*/ );
 }
-#endif
 
 ZMatrix::ZMatrix( int ncols, int nrows ): Matrix_Base<complex<double>>( nrows, ncols ) {
   real_mat_ = make_unique<RMatrix>(nrows, ncols);
@@ -387,6 +382,3 @@ void ZMatrix::generate_real_format_data(){
    cout << "combined mat" << endl;
    combined_mat_->print(); cout << endl;
 }
-
-
-

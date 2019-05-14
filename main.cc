@@ -27,9 +27,6 @@ int main() {
   unique_ptr<RMatrix> real_c = real_a->multiply(real_b);
   real_c->print();
 
-  cout << "diagonalizing real_c" << endl;
-  real_c->diagonalize(); 
-
   cout << "real_d" << endl;
   unique_ptr<RMatrix> real_d = *real_a + real_a;
   real_d->print();
@@ -95,8 +92,17 @@ int main() {
   cout << "dot = " << testzvec1->dot_product(*testzvec2) << endl;
   }
 
-  unique_ptr<Davidson> davidson = make_unique<Davidson>( 10, "Timmy"); 
+  unique_ptr<Davidson> solver = make_unique<Davidson>( 10, "Timmy"); 
+  solver->mat_ = make_unique<RMatrix>(*real_c);
 
+  cout << "testing sub_mat" << endl;
+  unique_ptr<RMatrix> sub_mat_test = real_c->get_sub_matrix(1,2,1,2);
+  cout << "printing_sub_mat" << endl;
+  sub_mat_test->print();
+  cout << endl;
+
+  solver->mat_->print();
+  solver->solve();
 
   return 0;
 }

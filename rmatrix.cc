@@ -77,6 +77,33 @@ void RMatrix::transpose(){
    ncols_ = new_mat->ncols_;
 }
 
+unique_ptr<RVector>
+RMatrix::extract_column( const int& col ) const { 
+   return make_unique<RVector>( nrows_, data_ptr_+col*nrows_);
+}
+
+unique_ptr<RMatrix>
+RMatrix::get_sub_matrix( const int& leftmost_col, const int& rightmost_col,
+                         const int& top_row, const int& bottom_row ) const {
+
+  int col_length = (bottom_row - top_row) + 1;
+  int row_length = (rightmost_col - leftmost_col) + 1;
+  
+  unique_ptr<RMatrix> sub_mat = make_unique<RMatrix>( row_length, col_length );
+
+  double* full_mat_ptr = data_ptr_+ leftmost_col*nrows_ + top_row;
+  double* sub_mat_ptr = sub_mat->data_ptr();
+
+  do {
+    sub_mat_ptr = copy_n(full_mat_ptr, col_length, sub_mat_ptr);
+    full_mat_ptr += nrows_;
+    --row_length;
+  } while(row_length !=0 );
+
+  return sub_mat;
+
+}
+
 unique_ptr<RMatrix>
 RMatrix::ax_plus_b( const  unique_ptr<RMatrix>& matrix_b, double factor ) {
  

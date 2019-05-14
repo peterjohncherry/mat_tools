@@ -2,6 +2,7 @@
 #define __SOLVER_H
 #include <string>
 
+template<typename DataType>
 class Solver {
 
   public : 
