@@ -61,6 +61,8 @@ class RMatrix : public Matrix_Base<double>  {
     RMatrix(int nrows, int ncols );
     RMatrix(int nrows, int ncols, const double& init_val );
     RMatrix(int nrows, int ncols, const std::unique_ptr<double[]>& init_data );
+    RMatrix( const int& nrows, const int& ncols, const int& top_row, const int& leftmost_col,
+                  std::unique_ptr<RMatrix>& sub_mat  );
   
     ~RMatrix(){};
 

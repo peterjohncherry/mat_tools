@@ -1,5 +1,7 @@
 #include "rmatrix.h" 
+#include <algorithm>
 #include "/home/peter/UTILS/LAPACK-3.8.0/LAPACKE/include/lapacke.h"
+
 
 extern "C" {
 extern int dgemm_(char * transa, char * transb, int * m, int * n, int * k,
@@ -53,6 +55,19 @@ RMatrix::RMatrix( RMatrix& mat)
   data_ = std::make_unique<double[]>(size_);
   data_ptr_= data_.get();
   std::copy_n(mat.data_ptr_, size_, data_ptr_);
+}
+
+RMatrix::RMatrix( const int& nrows, const int& ncols, const int& top_row, const int& leftmost_col,
+                  std::unique_ptr<RMatrix>& sub_mat  ) : Matrix_Base<double>(nrows, ncols ) {
+  data_ = std::make_unique<double[]>( size_ );
+  data_ptr_ = data_.get();
+  
+  double* new_mat_ptr = element_ptr(top_row, leftmost_col );
+  double* sub_mat_ptr = sub_mat->data_ptr();
+  for ( int ii = 0; ii != sub_mat->ncols(); ++ii, new_mat_ptr+=nrows_ ) {
+    std::move( sub_mat_ptr, sub_mat_ptr+sub_mat->nrows(), new_mat_ptr );
+  }
+
 }
 
 void RMatrix::set_test_elems(){ 

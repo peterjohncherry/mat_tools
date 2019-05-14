@@ -1,21 +1,27 @@
 #include "davidson.h"
+#include <vector>
 
 void Davidson::solve(){
 
-  std::cout << "hello" << std::endl; 
+  int nvecs = 4; 
 
-  std::unique_ptr<RVector> u1 = mat_->extract_column(1); 
+  std::vector<std::unique_ptr<RVector>> w_list;
+  std::vector<std::unique_ptr<RVector>> u_list;
 
-  std::cout << "u1" << std::endl;
-  u1->print();
+  std::unique_ptr<RMatrix> b_mat = std::make_unique<RMatrix>(1,1);
+  for (int jj = 0; jj != nvecs; ++jj ) {
+    
+    std::unique_ptr<RVector> uj = mat_->extract_column(jj);
+    uj->normalize();
+    u_list.push_back( std::move(uj) );
+    w_list.push_back(std::make_unique<RVector>());
+    w_list[jj] = mat_->multiply( u_list[jj] );
 
-  std::cout << "u1->norm() = " << u1->norm() << std::endl;
+    for ( int  kk = 0 ; kk != (jj+1); ++kk ) {
+      std::cout << "kk = " << kk << std::endl; 
+    }
+    //std::unique_ptr<RMatrix> b_mat = std::make_unique<RMatrix>( std::move(b_mat), jj, jj );
 
-  std::cout << "normalizing" << std::endl;
-  u1->normalize();
-
-  std::cout << "after normalization" << std::endl;
-  u1->print();
-  std::cout << "norm = " <<  u1->norm() << std::endl;
+  }
 
 }
