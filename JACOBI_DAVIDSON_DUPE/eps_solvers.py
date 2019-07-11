@@ -1,4 +1,5 @@
 import numpy as np
+import matrix_utils as mu
 import sys
 
 class eps_solver:
@@ -33,29 +34,29 @@ class eps_solver:
     def first_iteration_init(self):
 
         #initialize v1, w1, h1, theta, and residuals
-        self.vspace = np.eye(self.ndim, self.nev)
+        self.vspace = np.eye(self.ndim, self.nev, dtype=complex)
 
-        self.wspace =np.empty_like(self.vspace)
+        self.wspace =np.empty_like(self.vspace, dtype=complex)
         for ii in range(self.nev):
             self.wspace[:, ii] = self.sigma_constructor(self.vspace[:,ii])
 
-        self.h11 = np.ndarray((self.nev, self.nev))
+        self.h11 = np.ndarray((self.nev, self.nev), dtype=complex)
         for ii in range(self.nev):
             for jj in range(self.nev):
                 np.matmul(self.vspace[:,ii], self.wspace[:,jj])
 
-        self.u_vec = np.empty_like(self.vspace)
+        self.u_vec = np.empty_like(self.vspace, dtype=complex)
         for ii in range(self.nev):
             self.u_vec[:,ii] = self.vspace[:,ii]
 
         self.teta = np.linalg.eigvals(self.h11)
 
-        self.r_vec = np.ndarray((self.ndim, self.nev))
+        self.r_vec = np.ndarray((self.ndim, self.nev), dtype=complex)
         for ii in range(self.nev):
             self.r_vec[:,ii] = self.wspace[:, ii] - self.teta[ii]*self.u_vec[:,ii]
 
         self.dnorm = np.ndarray(self.nev)
-        self.skip  = np.ndarray(self.nev)
+        self.skip  = np.full(self.nev, False, dtype=bool)
         for ii in range(self.nev):
             self.dnorm[ii] = np.sqrt(np.linalg.norm(self.r_vec))
             if self.dnorm[ii] < self.threshold :
@@ -78,7 +79,7 @@ class eps_solver:
     ####################################################################################################################
     def preconditioning(self, vecinp ):
 
-        vecout = np.ndarray(self.ndim)
+        vecout = np.ndarray(self.ndim, dtype=complex)
 
         if self.preconditioning_type == "Full":
             for ii in range(int(self.ndim/2)):
@@ -129,16 +130,48 @@ class eps_solver:
         iter = self.nev
 
         while iter < self.maxs :
-
+            print("iter = ", iter)
             if ((iter + self.nev) > self.maxs ) :
                print ("WARNING: Maximum number of iterations was reached in eigenproblem solver ")
-               sys.exit()
+               sys.exit("(iter + nev )= (" +str(iter)+ "+" +str(self.nev) +") > " + str(self.maxs) )
 
             for iev in range(self.nev):
-
-                if self.skip[iev] :
+                #Skip calculation of eigenvalue if already converged
+                if self.skip[iev]:
+                   # print("eigval "+ str(iev)+ " already converged, skipping")
                     continue
 
+                #Calculate t, extend v_space and w_space
                 t_vec = self.get_t(iev)
+                mu.orthonormalize(t_vec, self.vspace)
+                self.vspace = np.c_[self.vspace, t_vec]
+                self.wspace = np.c_[self.wspace, self.sigma_constructor(t_vec)]
 
-            iter = iter +1
+                iter = iter +1
+
+            tmp = np.ndarray((iter,iter), dtype=complex)
+            for ii in range(iter):
+                for jj in range(iter):
+                    tmp[ii,jj] = np.dot(self.vspace[:, ii], self.wspace[:, jj])
+
+            # get Ritz Values
+            self.teta, hdiag = np.linalg.eig(tmp)
+
+            # get new ritz vecs (u_vec)
+            # get u_hat = A*u_vec , get residual r_vec = u_hat- teta*u_vec , calculate ||r||
+            u_hat = np.zeros_like(self.u_vec, dtype =complex)
+            self.u_vec.fill(0.0)
+            for iev in range(self.nev):
+                for jj in range(iter):
+                    self.u_vec[:,iev] = self.u_vec[:,iev] + hdiag[jj, iev]*self.vspace[:,jj]
+                    u_hat[:,iev] = u_hat[:,iev] + hdiag[jj, iev]*self.wspace[:, jj]
+
+                self.r_vec[:,iev]= u_hat[:,iev] - self.teta[iev]*self.u_vec[:,iev]
+
+                self.dnorm[iev] = np.linalg.norm(self.r_vec[:, iev])
+                self.skip[iev]= (self.dnorm[iev] < self.threshold)
+
+            print ("self.teta  = ", self.teta[:self.nev] )
+            print ("self.dnorm = ", self.dnorm)
+
+            #u_hat = np.zeros_like(self.u_vec)

@@ -20,3 +20,12 @@ def make_diagonally_dominant(mat_in, sparsity) :
             if ii != jj:
                 mat_out[ii,jj] = mat_in[ii,jj]*(sparsity**abs(ii-jj))
     return mat_out
+
+# orthonormalizes vec w.r.t. mat using modified Gramm Schmidt
+# matrix is a set of vectors stored as _columns_
+def orthonormalize(vec, mat):
+    for ii in range(np.size(mat,1)):
+        vec = vec - np.dot(vec, mat[:,ii])*mat[:,ii]
+
+    return vec/np.linalg.norm(vec)
+
