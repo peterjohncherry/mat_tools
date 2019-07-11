@@ -4,7 +4,7 @@ import matrix_utils as mu
 
 def test_jacobi_davidson():
     threshold = 0.0000001
-    max_iter = 5
+    max_iter = 20
     jd_test = eps_solvers.eps_solver("Jacobi Davidson", threshold, max_iter)
 
     ndim = 10
@@ -14,5 +14,7 @@ def test_jacobi_davidson():
 
     jd_test.set_variables(ndim, nev, A)
     jd_test.first_iteration_init()
+    jd_test.main_loop()
+
 
 
