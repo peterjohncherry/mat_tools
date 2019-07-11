@@ -8,7 +8,11 @@ def test_jacobi_davidson():
     jd_test = eps_solvers.eps_solver("Jacobi Davidson", threshold, max_iter)
 
     ndim = 10
+    nev =5
     sparsity = 0.0001
     A = mu.make_diagonally_dominant( mu.generate_random_symmetric_matrix(ndim, ndim), sparsity)
-    print( "--- A ---\n ", A)
+
+    jd_test.set_variables(ndim, nev, A)
+    jd_test.first_iteration_init()
+
 
