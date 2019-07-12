@@ -21,12 +21,16 @@ class eps_solver:
         self.ndim = ndim
         self.nev  = nev
         self.mat_orig = mat_orig
+        self.npevals, self.npevecs = np.linalg.eig(mat_orig)
+        mu.sort_eigvecs_and_vals(self.npevals, self.npevecs)
+
 
     ####################################################################################################################
     # This is the call back routine; just using matrix multiplication as we can store full matrix
     ####################################################################################################################
     def sigma_constructor(self, vec):
-        return np.matmul(self.mat_orig, vec)
+        tmp = np.matmul(self.mat_orig, vec)
+        return tmp/np.linalg.norm(tmp)
 
     ####################################################################################################################
     # Prepare first iteration
@@ -40,16 +44,21 @@ class eps_solver:
         for ii in range(self.nev):
             self.wspace[:, ii] = self.sigma_constructor(self.vspace[:,ii])
 
+
         self.h11 = np.ndarray((self.nev, self.nev), dtype=complex)
         for ii in range(self.nev):
             for jj in range(self.nev):
-                np.matmul(self.vspace[:,ii], self.wspace[:,jj])
+                self.h11[ii,jj] = np.matmul(self.vspace[:,ii], self.wspace[:,jj])
+
 
         self.u_vec = np.empty_like(self.vspace, dtype=complex)
         for ii in range(self.nev):
             self.u_vec[:,ii] = self.vspace[:,ii]
 
         self.teta = np.linalg.eigvals(self.h11)
+        print("self.teta = ", self.teta)
+        self.teta.sort()
+        print("self.teta sorted = ", self.teta)
 
         self.r_vec = np.ndarray((self.ndim, self.nev), dtype=complex)
         for ii in range(self.nev):
@@ -76,19 +85,22 @@ class eps_solver:
     ####################################################################################################################
     # Use preconditioned matrix to get guess vector
     # In "Full", eval_ai is replaced with diagonal elements of matrix... don't know if this is sensible
+    # Necessary for now as matrix lacks the appropriate pair structure
     ####################################################################################################################
-    def preconditioning(self, vecinp ):
+    def preconditioning(self, vecinp, iev ):
 
         vecout = np.ndarray(self.ndim, dtype=complex)
 
         if self.preconditioning_type == "Full":
-            for ii in range(int(self.ndim/2)):
-                vecout[2*ii-1] = vecinp[2*ii-1]#/(self.mat_orig[ii,ii] - self.teta[ii])
-                vecout[2*ii] = vecinp[2*ii]#/(self.mat_orig[ii,ii] - self.teta[ii])
+            #for ii in range(int(self.ndim/2)):
+            #    vecout[2*ii-1] = vecinp[2*ii-1]/(self.mat_orig[ii,ii] - self.teta[iev])
+            #    vecout[2*ii] = vecinp[2*ii]/(self.mat_orig[ii,ii] - self.teta[iev])
+            for ii in range(self.ndim):
+                vecout[ii] = vecinp[ii]/(self.mat_orig[ii,ii] - self.teta[iev])
 
-        elif self.preconditioning_type == "TDA":
-            for ii in range(ndim/2):
-                vecout[ii] = vecinp[ii]/self.teta[ii]
+        elif self.preconditioning_type == "Diag":
+            for ii in range(self.ndim):
+                vecout[ii] = vecinp[ii]/self.teta[iev]
 
         else :
             sys.exit("ABORTING! Preconditioning type " + self.preconditioning_type + " is unknown \n")
@@ -115,8 +127,8 @@ class eps_solver:
     ####################################################################################################################
     def get_t(self, iev):
         e = 0.0
-        v1 = self.preconditioning(self.r_vec[:, iev]) # v1 = M^{-1}r
-        v2 = self.preconditioning(self.u_vec[:, iev]) # v2 = M^{-1}u
+        v1 = self.preconditioning(self.r_vec[:, iev], iev) # v1 = M^{-1}r
+        v2 = self.preconditioning(self.u_vec[:, iev], iev) # v2 = M^{-1}u
 
         # e = (u M^{-1}r) /(u M^{-1} u)
         e = np.dot(self.u_vec[:,iev], v1)/np.dot(self.u_vec[:,iev], v2)
@@ -133,6 +145,8 @@ class eps_solver:
             print("iter = ", iter)
             if ((iter + self.nev) > self.maxs ) :
                print ("WARNING: Maximum number of iterations was reached in eigenproblem solver ")
+               mu.print_only_large_imag(self.teta, "teta")
+               print("npevals = ", self.npevals)
                sys.exit("(iter + nev )= (" +str(iter)+ "+" +str(self.nev) +") > " + str(self.maxs) )
 
             for iev in range(self.nev):
@@ -143,8 +157,11 @@ class eps_solver:
 
                 #Calculate t, extend v_space and w_space
                 t_vec = self.get_t(iev)
-                mu.orthonormalize(t_vec, self.vspace)
+
+
+                t_vec = mu.orthonormalize_v_against_A(t_vec, self.vspace)
                 self.vspace = np.c_[self.vspace, t_vec]
+                mu.test_orthogonality(self.vspace, name ="vspace+t")
                 self.wspace = np.c_[self.wspace, self.sigma_constructor(t_vec)]
 
                 iter = iter +1
@@ -171,7 +188,25 @@ class eps_solver:
                 self.dnorm[iev] = np.linalg.norm(self.r_vec[:, iev])
                 self.skip[iev]= (self.dnorm[iev] < self.threshold)
 
-            print ("self.teta  = ", self.teta[:self.nev] )
-            print ("self.dnorm = ", self.dnorm)
+           # mu.print_only_large_imag(self.teta[:self.nev], " teta")
+            self.teta.sort()
+            mu.print_only_large_imag(self.teta, " teta")
+            for ii in range(self.nev):
+                if self.skip[ii] :
+                    print ("Converged self.teta[",ii,"] = ", self.teta[ii])
+            if self.skip[:self.nev].min() :
+
+                print ("Converged!!")
+                return
 
             #u_hat = np.zeros_like(self.u_vec)
+
+    def check_mat_norms(self):
+        if np.linalg.norm(self.vspace) < 1:
+            sys.exit("vspace norm is tiny !! = " + str(np.linalg.norm(self.vspace)) + "ABORTING!")
+
+        if np.linalg.norm(self.wspace) < 1:
+            sys.exit("wspace norm is tiny !! = " + str(np.linalg.norm(self.wspace)) + "ABORTING!")
+
+        if np.linalg.norm(self.h11) < 1:
+            sys.exit("h11 norm is tiny !! = " + str(np.linalg.norm(self.h11)) + "ABORTING!")
