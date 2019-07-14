@@ -23,7 +23,9 @@ def test_jacobi_davidson():
     print ("npvals = ", npvals)
 
 def test_fortran_file_read():
-    mat_reader.read_binary_fortran_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/fmat_1D.bin', nrows=10, ncols=10, datatype="real")
+    nrows, ncols = mat_reader.read_mat_info_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/mat1_test.info')
+    print ("nrows = ", nrows, "  ncols = ", ncols)
+    mat_reader.read_binary_fortran_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/mat1_test.bin', nrows, ncols, datatype="real")
 
 
 
