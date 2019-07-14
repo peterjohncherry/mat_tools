@@ -1,6 +1,7 @@
 
 import eps_solvers
 import matrix_utils as mu
+import mat_reader
 import numpy as np
 
 def test_jacobi_davidson():
@@ -20,6 +21,10 @@ def test_jacobi_davidson():
     npvals.sort()
     npvals = npvals[::-1]
     print ("npvals = ", npvals)
+
+def test_fortran_file_read():
+    mat_reader.read_binary_fortran_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/fmat_1D.bin', nrows=10, ncols=10, datatype="real")
+
 
 
 
