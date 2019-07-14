@@ -1,13 +1,15 @@
 
 import eps_solvers
 import matrix_utils as mu
+import jacobi_davidson as jd
 import mat_reader
 import numpy as np
+
 
 def test_jacobi_davidson():
     threshold = 0.0000001
     max_iter = 20
-    jd_test = eps_solvers.eps_solver("Jacobi Davidson", threshold, max_iter, preconditioning_type="Full")
+    jd_test = jd.jacobi_davidson("Jacobi Davidson", threshold, max_iter, preconditioning_type="Full")
 
     ndim = 50
     nev = 4
