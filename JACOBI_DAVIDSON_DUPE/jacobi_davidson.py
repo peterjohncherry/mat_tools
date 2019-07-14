@@ -7,13 +7,22 @@ class jacobi_davidson(eps_solvers.eps_solver):
 
     ####################################################################################################################
     ####################################################################################################################
-    def set_variables(self, ndim, nev, mat_orig):
+    def __init__(self, eps_base ):
+        self.solver_type = eps_base.solver_type
+        self.threshold = eps_base.threshold
+        self.maxs = eps_base.maxs
+
+    ####################################################################################################################
+    ####################################################################################################################
+    def set_variables(self, ndim, nev, mat_orig, preconditioning_type = "Full"):
+
         if ndim % 2:
             sys.exit("ABORTING! Array must have even number of dimensions, " + str(ndim) + " is not even. \n")
         self.ndim = ndim
         self.nev = nev
         self.mat_orig = mat_orig
         self.npevals, self.npevecs = np.linalg.eig(mat_orig)
+        self.preconditioning_type = preconditioning_type
         mu.sort_eigvecs_and_vals(self.npevals, self.npevecs)
 
     ####################################################################################################################
