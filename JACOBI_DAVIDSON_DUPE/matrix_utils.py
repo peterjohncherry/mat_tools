@@ -11,22 +11,16 @@ def symmetrize_mat(mat):
 #actually not random; diagonal elements increase with indexes
 def generate_random_symmetric_matrix(dim):
     # type: (int, int) -> matrix
-    mat =np.ndarray((dim, dim))
-    for ii in range(dim):
-        for jj in range(dim):
-            if ii == jj:
-                mat[ii,jj] = dim - ii + 1
-            else :
-                mat[ii,jj] = np.random.rand()
+    mat = np.random.rand(dim,dim)
     return symmetrize_mat(mat)
 
 #Scales down off diagonal elements to make matrix amenable to solution by Davidson
 def make_diagonally_dominant(mat_in, sparsity) :
     mat_out = mat_in
-    for ii in range(np.size(mat_in,0)):
+    for ii in range(np.size(mat_in, 0)):
         for jj in range(np.size(mat_in, 1)):
             if ii != jj:
-                mat_out[ii,jj] = mat_in[ii,jj]*(sparsity**abs(ii-jj))
+                mat_out[ii,jj] = mat_in[ii,jj]*sparsity
     return mat_out
 
 # orthonormalizes vec w.r.t. mat using modified Gramm Schmidt
@@ -45,7 +39,7 @@ def test_orthogonality(A, name ="A"):
                 sys.exit("Orthogonalization failed!")
 
 def modifiedGramSchmidt(A):
-    ncols = A.shape[1]
+    ncols = A.shape[0]
     Q = np.zeros(A.shape, dtype=A.dtype)
     for j in range(ncols):
         q = A[:,j]
@@ -59,14 +53,25 @@ def modifiedGramSchmidt(A):
             Q[:,j] = q/rjj
     return Q
 
-#Assumes A is already orthogonormalized
-def orthonormalize_v_against_A(v, A):
+
+# Normalize v, and return pair, where second argument is the "relative shrinkage" of v
+# If ||(1-AA*)v|| <<  ||v||,  then component of v orthogonal to A, and the resulting orthogonalized
+# v is more likely to be problematically influenced by noise
+def orthonormalize_v_against_A_check(v,A):
+    ncols = A.shape[1]
+    orig_mod_v = np.linalg.norm(v)
+    for ii in range(ncols):
+        v = v - np.vdot(A[:, ii], v) * A[:, ii]
+    new_mod_v = np.linalg.norm(v)
+    v = v / new_mod_v
+    return v, new_mod_v/orig_mod_v
+
+# Normalize v against vectors stored as columns in A
+def orthonormalize_v_against_A(v,A):
     ncols = A.shape[1]
     for ii in range(ncols):
-        v = v - np.vdot(A[:,ii],v)*A[:,ii]
-    modv = np.linalg.norm(v)
-    v = v/modv
-    return v
+        v = v - np.vdot(A[:, ii], v) * A[:, ii]
+    return  v / np.linalg.norm(v)
 
 def print_only_large_imag( vec,name = " " ):
     if name != " ":
@@ -83,6 +88,7 @@ def sort_eigvecs_and_vals(eigvals, eigvecs):
     idx = eigvals.argsort()
     eigvals = eigvals[idx]
     eigvecs = eigvecs[:, idx]
+    return eigvals, eigvecs
 
 #checks whether columns of matrix vspace are normalized
 def check_normalization(vspace, thresh = 1e-10, name = "???"):

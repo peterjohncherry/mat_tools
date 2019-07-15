@@ -8,6 +8,7 @@ class Solver:
         self.mat_orig = mat_orig
         self.solver_type = solver_type
         self.nev = nev
+        self.ndim = np.size(self.mat_orig,0)
         self.threshold = threshold
         self.maxs = maxs
 

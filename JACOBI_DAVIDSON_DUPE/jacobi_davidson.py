@@ -23,7 +23,6 @@ class JacobiDavidson(eps_solvers.Solver):
     # Prepare first iteration
     ####################################################################################################################
     def first_iteration_init(self):
-
         # initialize v1, w1, h1, theta, and residuals
         self.vspace = np.eye(self.ndim, self.nev, dtype=complex)
 
@@ -36,14 +35,12 @@ class JacobiDavidson(eps_solvers.Solver):
             for jj in range(self.nev):
                 self.h11[ii, jj] = np.matmul(self.vspace[:, ii], self.wspace[:, jj])
 
+        self.teta, self.v_vec = np.linalg.eigh(self.h11)
+        self.teta, self.v_vec = mu.sort_eigvecs_and_vals(self.teta, self.v_vec)
+
         self.u_vec = np.empty_like(self.vspace, dtype=complex)
         for ii in range(self.nev):
             self.u_vec[:, ii] = self.vspace[:, ii]
-
-        self.teta = np.linalg.eigvals(self.h11)
-        print("self.teta = ", self.teta)
-        self.teta.sort()
-        print("self.teta sorted = ", self.teta)
 
         self.r_vec = np.ndarray((self.ndim, self.nev), dtype=complex)
         for ii in range(self.nev):
@@ -81,7 +78,7 @@ class JacobiDavidson(eps_solvers.Solver):
             #    vecout[2*ii-1] = vecinp[2*ii-1]/(self.mat_orig[ii,ii] - self.teta[iev])
             #    vecout[2*ii] = vecinp[2*ii]/(self.mat_orig[ii,ii] - self.teta[iev])
             for ii in range(self.ndim):
-                vecout[ii] = vecinp[ii] / (self.mat_orig[ii, ii] - self.teta[iev])
+                vecout[ii] = vecinp[ii] / (self.teta[iev]- self.mat_orig[ii, ii])
 
         elif self.preconditioning_type == "Diag":
             for ii in range(self.ndim):
@@ -122,16 +119,17 @@ class JacobiDavidson(eps_solvers.Solver):
     ####################################################################################################################
     # Main loop of eigensolver
     ####################################################################################################################
-    def main_loop(self):
+    def solve(self):
         iter = self.nev
+
+
+        for jj in range(0, self.nev):  # build up initial guess vectors
+            self.v_vec[:, jj] = self.v_vec[:, jj] / np.linalg.norm(self.v_vec[:, jj])
 
         while iter < self.maxs:
             print("iter = ", iter)
             if ((iter + self.nev) > self.maxs):
-                print("WARNING: Maximum number of iterations was reached in eigenproblem solver ")
-                mu.print_only_large_imag(self.teta, "teta")
-                print("npevals = ", self.npevals)
-                sys.exit("(iter + nev )= (" + str(iter) + "+" + str(self.nev) + ") > " + str(self.maxs))
+                convergence_failure(iter)
 
             for iev in range(self.nev):
                 # Skip calculation of eigenvalue if already converged
@@ -142,7 +140,10 @@ class JacobiDavidson(eps_solvers.Solver):
                 # Calculate t, extend v_space and w_space
                 t_vec = self.get_t(iev)
 
-                t_vec = mu.orthonormalize_v_against_A(t_vec, self.vspace)
+                t_vec, relative_shrinkage = mu.orthonormalize_v_against_A_check(t_vec, self.vspace)
+                if relative_shrinkage < 1e-8 :
+                    print ("Skipping v due to shrinkage")
+                    continue
                 self.vspace = np.c_[self.vspace, t_vec]
                 mu.test_orthogonality(self.vspace, name="vspace+t")
                 self.wspace = np.c_[self.wspace, self.sigma_constructor(t_vec)]
@@ -190,3 +191,12 @@ class JacobiDavidson(eps_solvers.Solver):
 
         if np.linalg.norm(self.h11) < 1:
             sys.exit("h11 norm is tiny !! = " + str(np.linalg.norm(self.h11)) + "ABORTING!")
+
+    def convergence_failure(self, iter, print_evals, print_evecs):
+        print("WARNING: Maximum number of iterations was reached in eigenproblem solver ")
+        if print_evals :
+            mu.print_only_large_imag(self.teta, "teta")
+            print("npevals = ", self.npevals)
+        if print_evecs :
+            print("npevecs = ", self.npevecs)
+        sys.exit("(iter + nev )= (" + str(iter) + "+" + str(self.nev) + ") > " + str(self.maxs))
