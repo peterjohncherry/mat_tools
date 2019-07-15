@@ -7,24 +7,10 @@ class JacobiDavidson(eps_solvers.Solver):
 
     ####################################################################################################################
     ####################################################################################################################
-    def __init__(self, solver_type, threshold, maxs, solver_name = "jd"):
-        self.solver_type = solver_type
-        self.threshold = threshold
-        self.maxs = maxs
-
-
-    ####################################################################################################################
-    ####################################################################################################################
-    def set_variables(self, ndim, nev, mat_orig, preconditioning_type = "Full"):
-
-        if ndim % 2:
+    def set_variables(self, preconditioning_type = "Full"):
+        if self.ndim % 2:
             sys.exit("ABORTING! Array must have even number of dimensions, " + str(ndim) + " is not even. \n")
-        self.ndim = ndim
-        self.nev = nev
-        self.mat_orig = mat_orig
-        self.npevals, self.npevecs = np.linalg.eig(mat_orig)
         self.preconditioning_type = preconditioning_type
-        mu.sort_eigvecs_and_vals(self.npevals, self.npevecs)
 
     ####################################################################################################################
     # This is the call back routine; just using matrix multiplication as we can store full matrix
@@ -110,7 +96,6 @@ class JacobiDavidson(eps_solvers.Solver):
     # Calculates t vector for expansion of guess space
     # if approx = "Exact" --> e = (u M^{-1}r) /(u M^{-1} u)
     # if approx = "basic" --> e =
-
     ####################################################################################################################
     def get_epsilon(self, approx="basic"):
         if approx == "basic":
@@ -195,8 +180,6 @@ class JacobiDavidson(eps_solvers.Solver):
             if self.skip[:self.nev].min():
                 print("Converged!!")
                 return
-
-            # u_hat = np.zeros_like(self.u_vec)
 
     def check_mat_norms(self):
         if np.linalg.norm(self.vspace) < 1:
