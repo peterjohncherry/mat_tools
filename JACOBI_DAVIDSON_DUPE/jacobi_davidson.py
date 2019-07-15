@@ -3,14 +3,15 @@ import matrix_utils as mu
 import sys
 import eps_solvers
 
-class jacobi_davidson(eps_solvers.eps_solver):
+class JacobiDavidson(eps_solvers.Solver):
 
     ####################################################################################################################
     ####################################################################################################################
-    def __init__(self, eps_base ):
-        self.solver_type = eps_base.solver_type
-        self.threshold = eps_base.threshold
-        self.maxs = eps_base.maxs
+    def __init__(self, solver_type, threshold, maxs, solver_name = "jd"):
+        self.solver_type = solver_type
+        self.threshold = threshold
+        self.maxs = maxs
+
 
     ####################################################################################################################
     ####################################################################################################################
