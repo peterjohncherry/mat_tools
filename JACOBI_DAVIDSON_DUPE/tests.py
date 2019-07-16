@@ -30,10 +30,10 @@ def test_davidson():
 
 def test_jacobi_davidson():
     threshold = 1e-8
-    max_iter = 10
-    ndim = 1000
+    max_iter = 50
+    ndim = 100
     nevals = 4
-    sparsity = 0.1
+    sparsity = 0.001
     A = mu.make_diagonally_dominant( mu.generate_random_symmetric_matrix(ndim), sparsity)
     # Calculate and print eigvals from numpy for checking
     numpy_check(A, nevals)

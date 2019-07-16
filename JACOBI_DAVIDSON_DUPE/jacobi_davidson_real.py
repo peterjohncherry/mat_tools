@@ -25,19 +25,18 @@ class JacobiDavidsonReal(eps_solvers.Solver):
     def first_iteration_init(self):
         # initialize v1, w1, h1, theta, and residuals
         self.vspace = np.eye(self.ndim, self.nev, dtype=np.float64)
-        print ("vspace = ", self.vspace)
 
         self.wspace = np.empty_like(self.vspace, dtype=np.float64)
         for ii in range(self.nev):
             self.wspace[:, ii] = self.sigma_constructor(self.vspace[:, ii])
+            self.wspace[:, ii] = self.wspace[:, ii]/np.linalg.norm(self.wspace[:, ii])
 
         self.h11 = np.ndarray((self.nev, self.nev), dtype=np.float64)
         for ii in range(self.nev):
             for jj in range(self.nev):
-                self.h11[ii, jj] = np.matmul(self.vspace[:, ii], self.wspace[:, jj])
+                self.h11[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
 
-        self.teta, self.v_vec = np.linalg.eigh(self.h11)
-    #    self.teta, self.v_vec = mu.sort_eigvecs_and_vals(self.teta, self.v_vec)
+        self.teta = np.linalg.eigvalsh(self.h11)
 
         self.u_vec = np.empty_like(self.vspace, dtype=np.float64)
         for ii in range(self.nev):
@@ -123,14 +122,13 @@ class JacobiDavidsonReal(eps_solvers.Solver):
         vdim = self.nev
 
         # build up initial guess vectors
-        for jj in range(0, vdim):
-            self.v_vec[:, jj] = self.v_vec[:, jj] / np.linalg.norm(self.v_vec[:, jj])
+        for jj in range(self.nev):
+            self.vspace[:, jj] = self.vspace[:, jj] / np.linalg.norm(self.vspace[:, jj])
 
         # Entering inner loop
         while iter < self.maxs:
-            print("iter = ", iter)
             if ((iter + self.nev) > self.maxs):
-                self.convergence_failure(iter)
+                self.convergence_failure(iter, print_evals = True,  print_evecs = True)
 
             for iev in range(self.nev):
                 if self.skip[iev]:
@@ -139,10 +137,10 @@ class JacobiDavidsonReal(eps_solvers.Solver):
 
                 # Calculate t, extend v_space and w_space
                 t_vec = self.get_t(iev)
+                t_vec = t_vec/np.linalg.norm(t_vec)
                 t_vec, relative_shrinkage = mu.orthonormalize_v_against_A_check(t_vec, self.vspace)
 
                 if relative_shrinkage < 1e-6 :
-                    print("Skipping v due to shrinkage")
                     iter = iter + 1
                     continue
 
@@ -151,41 +149,45 @@ class JacobiDavidsonReal(eps_solvers.Solver):
                 mu.test_orthogonality(self.vspace, name="vspace+t")
                 self.wspace = np.c_[self.wspace, self.sigma_constructor(t_vec)]
 
-                vdim = vdim + 1
+
                 iter = iter + 1
 
+            vdim = self.vspace.shape[1]
             tmp = np.ndarray((vdim, vdim), dtype=np.float64)
             for ii in range(vdim):
                 for jj in range(vdim):
                     tmp[ii, jj] = np.dot(np.conj(self.vspace[:, ii]), self.wspace[:, jj])
 
             # get Ritz Values
-            self.teta, hdiag = np.linalg.eig(tmp)
 
-            # get new ritz vecs (u_vec)
-            # get u_hat = A*u_vec , get residual r_vec = u_hat- teta*u_vec , calculate ||r||
-            u_hat = np.zeros_like(self.u_vec, dtype=np.float64)
-            self.u_vec.fill(0.0)
-            for iev in range(self.nev):
+            self.teta, h_eigvecs = np.linalg.eigh(tmp)
+
+            # get Ritz vecs (u_vec) by using coefficients found from diagonalization of tmp in vspace
+            self.u_vec = np.zeros_like(self.vspace)
+            for iev in range(vdim):
                 for jj in range(vdim):
-                    self.u_vec[:, iev] = self.u_vec[:, iev] + hdiag[jj, iev] * self.vspace[:, jj]
-                    u_hat[:, iev] = u_hat[:, iev] + hdiag[jj, iev] * self.wspace[:, jj]
+                   self.u_vec[jj,iev] = self.u_vec[jj,iev] + h_eigvecs[jj,iev] * self.vspace[jj,iev]
 
+            # get u_hat = A*u_vec , get residual r_vec = u_hat- teta*u_vec , calculate ||r||
+            u_hat = np.matmul(self.mat_orig, self.u_vec)
+
+            self.r_vec = np.zeros_like(self.u_vec)
+            self.dnorm = np.ndarray(vdim)
+            self.skip = np.ndarray(vdim)
+            for iev in range(vdim):
                 self.r_vec[:, iev] = u_hat[:, iev] - self.teta[iev] * self.u_vec[:, iev]
-
                 self.dnorm[iev] = np.linalg.norm(self.r_vec[:, iev])
                 self.skip[iev] = (self.dnorm[iev] < self.threshold)
 
-            # mu.print_only_large_imag(self.teta[:self.nev], " teta")
-#            self.teta.sort()
-            mu.print_only_large_imag(self.teta, " teta")
             for ii in range(self.nev):
                 if self.skip[ii]:
                     print("Converged self.teta[", ii, "] = ", self.teta[ii])
             if self.skip[:self.nev].min():
                 print("Converged!!")
+                print("teta[:nev] = ", self.teta[:self.nev])
                 return
-            print ("iter = ", iter , "vdim = ", vdim )
+
+        print("teta[:nev] = ", self.teta[:self.nev])
 
     def check_mat_norms(self):
         if np.linalg.norm(self.vspace) < 1:
@@ -202,8 +204,13 @@ class JacobiDavidsonReal(eps_solvers.Solver):
         if print_evals :
             mu.print_only_large_imag(self.teta, "teta")
             npevals = np.linalg.eigvals(self.mat_orig)
-            print ("numpy eigenvalues =",  npevals[:self.nev])
+            print ("numpy eigenvalues =",  npevals[:self.nev].sort())
         if print_evecs :
-            print( self.u_vecs)
+            npevals, npevecs = np.linalg.eigh(self.mat_orig)
+            #print(self.u_vec[:, self.nev])
+            print(npevecs[:, self.nev])
+
+            print(self.teta[:self.nev])
+            print(npevals[:self.nev])
 
         sys.exit("(iter + nev ) = " + str(iter) + " + " + str(self.nev) )

@@ -67,8 +67,12 @@ def orthonormalize_v_against_A_check(v,A):
     for ii in range(ncols):
         v = v - np.vdot(A[:, ii], v) * A[:, ii]
     new_mod_v = np.linalg.norm(v)
-    v = v / new_mod_v
-    return v, new_mod_v/orig_mod_v
+    #print("new_mod_v = ", new_mod_v)
+    #print("orig_mod_v = ", orig_mod_v)
+    if new_mod_v > 1e-10 :
+        return v/new_mod_v, new_mod_v/orig_mod_v
+    else :
+        return v, 1e-10
 
 # Normalize v against vectors stored as columns in A
 def orthonormalize_v_against_A(v,A):
