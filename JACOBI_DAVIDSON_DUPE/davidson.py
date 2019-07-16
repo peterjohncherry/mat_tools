@@ -57,6 +57,3 @@ class Davidson(eps_solvers.Solver):
                 break
 
         print ("davidson results = ", theta[:eig])
-
-
-

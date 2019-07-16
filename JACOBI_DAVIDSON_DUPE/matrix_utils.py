@@ -20,7 +20,11 @@ def make_diagonally_dominant(mat_in, sparsity) :
     for ii in range(np.size(mat_in, 0)):
         for jj in range(np.size(mat_in, 1)):
             if ii != jj:
-                mat_out[ii,jj] = mat_in[ii,jj]*sparsity
+                scale = np.power(sparsity, abs(ii-jj))
+                if scale > 1e-6 :
+                    mat_out[ii,jj] = mat_in[ii,jj]*scale
+                else :
+                    mat_out[ii, jj] = 0.0
     return mat_out
 
 # orthonormalizes vec w.r.t. mat using modified Gramm Schmidt
