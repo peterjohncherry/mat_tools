@@ -1,6 +1,8 @@
 import sys
 import numpy as np
 from scipy.io import FortranFile
+import os
+
 
 def read_binary_fortran_file (name, nrows, ncols, datatype):
     input_array=np.ndarray((nrows*ncols))
