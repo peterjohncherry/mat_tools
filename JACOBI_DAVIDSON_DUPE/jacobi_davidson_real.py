@@ -2,6 +2,7 @@ import numpy as np
 import matrix_utils as mu
 import sys
 import eps_solvers
+import mat_reader as mr
 
 class JacobiDavidsonReal(eps_solvers.Solver):
 
@@ -188,6 +189,10 @@ class JacobiDavidsonReal(eps_solvers.Solver):
                 return
 
         print("teta[:nev] = ", self.teta[:self.nev])
+
+    seedname = "full_mat"
+    mr.read_fortran_matrix(seedname)
+
 
     def check_mat_norms(self):
         if np.linalg.norm(self.vspace) < 1:
