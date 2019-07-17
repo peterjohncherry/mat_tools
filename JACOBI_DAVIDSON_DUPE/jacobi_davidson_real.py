@@ -190,8 +190,8 @@ class JacobiDavidsonReal(eps_solvers.Solver):
 
         print("teta[:nev] = ", self.teta[:self.nev])
 
-    seedname = "full_mat"
-    mr.read_fortran_matrix(seedname)
+    seedname = "/home/peter/RS_FILES/full_mat"
+    mr.read_fortran_array(seedname)
 
 
     def check_mat_norms(self):
