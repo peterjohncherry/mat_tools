@@ -190,9 +190,14 @@ class JacobiDavidsonReal(eps_solvers.Solver):
 
         print("teta[:nev] = ", self.teta[:self.nev])
 
-    seedname = "/home/peter/RS_FILES/full_mat"
-    mr.read_fortran_array(seedname)
+    #collect matrices from ReSpect
+    ReSpect_Arrays = {}
+    seedname_list =  ["Submat", "TVecOrth","Teta", "TVecUnorth", "Wspace", "wspace", "UVecs","RVecs","HdiagEvecs", \
+                      "hdiag_init", "hdiag_evecs"]
 
+    for seedname in seedname_list :
+        basename = "/home/peter/RS_FILES/"+seedname
+        ReSpect_Arrays[seedname] = mr.read_array_sequence(basename, save_as_numpy_file=False, get_ndarray_list= True)
 
     def check_mat_norms(self):
         if np.linalg.norm(self.vspace) < 1:
@@ -206,10 +211,12 @@ class JacobiDavidsonReal(eps_solvers.Solver):
 
     def convergence_failure(self, iter, print_evals=True, print_evecs=False):
         print("WARNING: Maximum number of iterations was reached in eigenproblem solver ")
+
         if print_evals :
             mu.print_only_large_imag(self.teta, "teta")
             npevals = np.linalg.eigvals(self.mat_orig)
             print ("numpy eigenvalues =",  npevals[:self.nev].sort())
+
         if print_evecs :
             npevals, npevecs = np.linalg.eigh(self.mat_orig)
             #print(self.u_vec[:, self.nev])

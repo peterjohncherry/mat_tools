@@ -1,5 +1,8 @@
+# python libraries
+import glob
+
+# external libraries
 import sys
-import os
 import numpy as np
 from scipy.io import FortranFile
 
@@ -17,14 +20,12 @@ def read_binary_fortran_file(name, datatype, dim0, dim1=1 ):
           fmat = FortranFile(name, 'r')
           input_array = fmat.read_reals(dtype=np.float64)
           input_array = input_array.reshape((dim0,dim1)).transpose()
-          print (input_array)
           fmat.close()
 
       elif (datatype == "int"):
           fmat = FortranFile(name, 'r')
           input_array = fmat.read_ints(dtype=np.int32)
           input_array = input_array.reshape((dim0,dim1)).transpose()
-          print (input_array)
           fmat.close()
 
       elif ( datatype == "complex" ):
@@ -75,25 +76,34 @@ def read_fortran_array(seedname):
         sys.exit("Not implemented " + datatype + " ABORTING" )
 
 def read_numpy_array(name):
-    print ("read_numpy_array", name)
-    my_var = np.load(name)
-    print ("name = \n", my_var)
+    return np.load(name)
+
+def get_seedname_list(base_name):
+    seedname_list = []
+    for infile in sorted(glob.glob(base_name + '*')):
+        if infile.endswith('.info'):
+            seedname = infile[:-5]
+            seedname_list.append(seedname)
+    return seedname_list
 
 
-#if __name__=='__main__':
-#        import sys
-#        if len(sys.argv)==2:
-#            dir_path = os.path.dirname(os.path.realpath(__file__))
-#            seedname = dir_path + "/" +sys.argv[1]
-#            print ("seedname = ",  seedname )
-#            np.save(seedname, read_fortran_array(seedname))
-#            read_numpy_array(seedname+".npy")
+def read_array_sequence(basename, save_as_numpy_file=True, save_as_text_file=False, get_ndarray_list= False):
+    # dir_path = "/home/peter/RS_FILES/"
+    seedname_list = get_seedname_list(basename)
 
+    if save_as_numpy_file:
+        for seedname in seedname_list:
+            np.save(seedname, read_fortran_array(seedname))
 
-#        elif len(sys.argv)==3:
-#            seedname = sys.argv[2] + "/"+ sys.argv[1]
-#            print ("seedname = ",  seedname )
-#            read_fortran_array(seedname)
-#        else :
-#            print(" input should be of form  ./read_fortran_matrix seedname working_directory, where " \
-#                    "the relevant files can be found in {working_directory}+/+{seedname}\n" )
+    if save_as_text_file:
+        for seedname in seedname_list:
+            np.savetxt(seedname + ".txt", read_fortran_array(seedname))
+
+    if get_ndarray_list :
+        array_list =  []
+        for seedname in seedname_list:
+            array_list.append(read_fortran_array(seedname))
+        return array_list
+
+#read_array_sequence(basename, save_as_npy, save_as_text)
+
