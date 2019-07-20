@@ -31,4 +31,33 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.iter = 0
         self.first = True # For the first iteration?
 
+    def main_loop(self):
+        iold = self.iter
+
+        if (self.iter + self.nev > self.maxs) :
+            print("WARNING in EPS solver: Maximum number of iteration reached")
+            sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
+
+        iev =1
+        while iev >self.nev :
+            iev = iev + 1
+            if self.skip[iev] :
+                continue
+
+            self.get_new_t_vec()
+            if self.first :
+                print("set t_vec to u_vec guess")
+                #t_vec = self.u_vec[:,iev]
+
+
+
+    #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
+    def get_new_tvec(self):
+        print ("not_done")
+
+
+
+
+
+
 
