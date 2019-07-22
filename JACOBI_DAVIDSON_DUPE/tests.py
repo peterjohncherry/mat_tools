@@ -4,6 +4,7 @@ import davidson
 import jacobi_davidson_real as jdr
 import jacobi_davidson_4c as jdr4c
 import mat_reader as mr
+import tddft_info as Info
 
 def numpy_check( matrix_orig, eig, print_eigvals = True, print_eigvecs = False):
     E, Vec = np.linalg.eig(matrix_orig)
@@ -53,16 +54,25 @@ def test_jacobi_davidson_4c():
     threshold = 1e-8
     max_iter = 50
     nevals = 3
-    noc = 10
+    nocc = 10
     nvirt =10
+
+
+    startinfo = Info.TddftInfo( restart = True, num_eigenvalues =nevals, maxdim_subspace = max_iter, threshold = 1e-8,
+                                solver = "Jacobi_Davidson", method = "TDA", pe_rot= True)
+
+
     jd_test = jdr4c.JacobiDavidson4C("Jacobi Davidson", nevals, threshold, max_iter)
-    jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat")
+
+    #jdr4c.tddft4_initialize(ndimc, ndims, nocc, tddft_info, symmetry)
+    #jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat")
+
     evals = mr.read_fortran_array("/home/peter/RS_FILES/4C/lapack_eigvals")
     evals = np.float64(evals)
     np.savetxt("/home/peter/RS_FILES/4C/lapack_eigvals", evals, fmt='%10.5f')
-    jd_test.set_variables(noc, nvirt)
-    jd_test.initialize_tda()
-    jd_test.main_loop()
+    #jd_test.set_variables(noc, nvirt)
+    #jd_test.initialize_tda()
+    #jd_test.main_loop()
 
 
 
