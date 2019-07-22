@@ -53,12 +53,16 @@ def test_jacobi_davidson_4c():
     threshold = 1e-8
     max_iter = 50
     nevals = 3
+    noc = 10
+    nvirt =10
     jd_test = jdr4c.JacobiDavidson4C("Jacobi Davidson", nevals, threshold, max_iter)
     jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat")
     evals = mr.read_fortran_array("/home/peter/RS_FILES/4C/lapack_eigvals")
     evals = np.float64(evals)
     np.savetxt("/home/peter/RS_FILES/4C/lapack_eigvals", evals, fmt='%10.5f')
+    jd_test.set_variables(noc, nvirt)
     jd_test.initialize_tda()
+    jd_test.main_loop()
 
 
 
