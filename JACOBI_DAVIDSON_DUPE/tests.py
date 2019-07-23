@@ -50,27 +50,21 @@ def test_fortran_file_read():
     print ("nrows = ", nrows, "  ncols = ", ncols)
     mat_reader.read_binary_fortran_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/mat1_test.bin', nrows, ncols, datatype="real")
 
-
-# ndimc = number of cartesian basis functions
-# ndims = number of spinor basis functions
-#
 def test_jacobi_davidson_4c():
-    threshold = 1e-8
-    max_iter = 50
     nevals = 3
 
+    jd_test = jdr4c.JacobiDavidson4C( num_eigenvalues = nevals,
+                                      rs_filename = "/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")
 
-    jd_test = jdr4c.JacobiDavidson4C(num_eigenvalues = nevals, rs_filename = "/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")
+    jd_test.initialize()
+
     jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat")
+    jd_test.solve()
 
+def test_array_reading():
     evals = mr.read_fortran_array("/home/peter/RS_FILES/4C/lapack_eigvals")
     evals = np.float64(evals)
     np.savetxt("/home/peter/RS_FILES/4C/lapack_eigvals", evals, fmt='%10.5f')
-
-    jd_test.solve()
-
-
-
 
 
 

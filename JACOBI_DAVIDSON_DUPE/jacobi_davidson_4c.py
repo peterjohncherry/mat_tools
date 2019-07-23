@@ -1,8 +1,6 @@
 import numpy as np
-import matrix_utils as mu
 import sys
 import eps_solvers
-import tddft_info
 
 class JacobiDavidson4C(eps_solvers.Solver):
 
@@ -20,53 +18,24 @@ class JacobiDavidson4C(eps_solvers.Solver):
         for ii in range(ns2):
             self.evals[ii] = els[ii + ns2]
 
+        # If pe_rot is true we allow mixing between virtual orbitals with positive and negative energies
         if self.pe_rot:
             for ii in range(ns2):
                 self.evals[ii + ns2] = els[ii]
 
         self.nov = self.nvirt * self.nocc
-        self.esorted = np.empty(self.nov)
-        for ii in range(self.nov):
-            self.esorted[ii] = self.evalai(ii)
 
         self.eindex = np.empty(self.nov)
         for ii in range(self.nov):
             self.eindex[ii] = ii
 
-        # if obeys symmetry relations, can use smaller arrays, as eigvals/vecs are coupled
+        self.esorted = np.empty(self.nov)
         if self.P0_tsymm == "symmetric":
-            self.esorted4 = np.ndarray(self.nov / 4)
-            self.eindex4 = np.ndarray(self.nov / 4)
-
-            for ii in range(self.nov / 4):
-                self.eindex[ii] = ii
-
-            ij = 0
-            for ii in range(0, self.nocc, 2):
-                for jj in range(0, self.nvir, 2):
-                    ij = ij + 1
-                    self.esorted4[ij] = self.esorted[(ii - 1) * self.nvir + jj]
-
-            for ii in range(0, (self.nov / 4 - 1)):
-                imin = np.amin[self.esorted[ii:self.nov / 4]]
-                if imin != 0:
-                    self.esorted4[[ii, imin]] = self.esorted4[[imin, ii]]
-                    self.eindex4[[ii, imin]] = self.eindex4[[imin, ii]]
-
-            for ii in range(nov / 4):
-                jj = (self.eindex4[ii] - 1) / (self.nvir / 2)
-                imin = 2 * nvir * jj + (self.eindex[ii] - 1) % ((self.nvir / 2) + 1)
-                self.eindex[4 * ii - 3] = imin
-                self.eindex[4 * ii - 2] = imin + self.nvir
-                self.eindex[4 * ii - 1] = imin + 1
-                self.eindex[4 * ii] = imin + self.nvir + 1
-
-        # if self.P0_tsymm == "general":
-        #    for ii in range(self.nov-1):
-        #        imin = np.amin[self.esorted[ii:self.nov]]
-        #        if imin != 0:
-        #            self.esorted[[ii, imin]] = self.esorted[[imin, ii]]
-        #            self.eindex[[ii, imin]] = self.eindex[[imin, ii]]
+            self.get_esorted_symmetric()
+        elif self.P0_tsymm == "general":
+            self.get_esorted_general()
+        else:
+            sys.exit("have not implemented guess for symmetry " + self.P0_tsymm)
 
     def solve(self):
         self.initialize_first_iteration()
@@ -80,9 +49,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.r_vec = np.zeros((self.ndim, self.nev), dtype=np.complex64)
         self.u_hat = np.zeros((self.ndim, self.nev), dtype=np.complex64)
         self.t_vec = np.zeros(self.ndim, dtype=np.complex64)
-        self.vspace = np.zeros((self.ndim, self.maxs),dtype= np.complex64)
-        self.wspace = np.zeros((self.ndim, self.maxs),dtype= np.complex64)
-        self.submat = np.zeros((self.maxs, self.maxs),dtype= np.complex64)
+        self.vspace = np.zeros((self.ndim, self.maxs), dtype=np.complex64)
+        self.wspace = np.zeros((self.ndim, self.maxs), dtype=np.complex64)
+        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)
 
         self.nov = self.nocc*self.nvirt
         self.iter = 0
@@ -91,13 +60,55 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.evecs = np.empty((self.nov, self.nev), dtype = np.complex64)
 
         self.read_1e_eigvals_and_eigvecs()
+
         if self.method == "TDA":
             self.construct_guess_tda()
-
         elif self.method == "FULL":
             self.construct_guess_full()
         else:
             sys.exit("Preconditioner \""+self.preconditioner+"\" is not implemented \n")
+
+
+    def get_esorted_general(self):
+    # build sorted list of eigval differences without imposing any symmetry constraints
+        for ii in range(self.nov-1):
+            imin = np.argmin(self.esorted[ii:self.nov])
+            if imin != 0:
+                self.esorted[[ii, imin]] = self.esorted[[imin, ii]]
+                self.eindex[[ii, imin]] = self.eindex[[imin, ii]]
+
+
+    def get_esorted_symmetric():
+    # Build sorted list of eigval differences with symmetry constraints imposed.
+    # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
+    # E_{0i}-E_{0a}) = (E_{1i}-E_{0a}) = (E_{1i}-E_{1a}) = (E_{0i}-E_{1a})
+    # where 0i and 1a index an occupied Kramers pair, and 0a and 1a index a virtual Kramers pair
+    # if obeys symmetry relations, can use smaller arrays, as eigvals/vecs are coupled
+            self.esorted4 = np.ndarray(self.nov / 4)
+            self.eindex4 = np.ndarray(self.nov / 4)
+
+            for ii in range(self.nov / 4):
+                self.eindex[ii] = ii
+
+            ij = 0
+            for ii in range(0, self.nocc, 2):
+                for jj in range(0, self.nvir, 2):
+                    ij = ij + 1
+                    self.esorted4[ij] = self.esorted[(ii - 1) * self.nvir + jj]
+
+            for ii in range(0, (self.nov / 4 - 1)):
+                imin = np.argmin[self.esorted[ii:self.nov / 4]]
+                if imin != 0:
+                    self.esorted4[[ii, imin]] = self.esorted4[[imin, ii]]
+                    self.eindex4[[ii, imin]] = self.eindex4[[imin, ii]]
+
+            for ii in range(nov / 4):
+                jj = (self.eindex4[ii] - 1) / (self.nvir / 2)
+                imin = 2 * nvir * jj + (self.eindex[ii] - 1) % ((self.nvir / 2) + 1)
+                self.eindex[4 * ii - 3] = imin
+                self.eindex[4 * ii - 2] = imin + self.nvir
+                self.eindex[4 * ii - 1] = imin + 1
+                self.eindex[4 * ii] = imin + self.nvir + 1
 
     def read_1e_eigvals_and_eigvecs(self):
         self.evals_1e = np.zeros(self.ndims, dtype =np.float64)
@@ -140,7 +151,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
             if self.first :
                 print("set t_vec to u_vec guess")
                 #t_vec = self.u_vec[:,iev]
-
 
     # iguess : index of the eigenvector being built
     def tddft4_driver_guess(self, iguess ):
