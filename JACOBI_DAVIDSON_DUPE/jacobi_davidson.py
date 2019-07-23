@@ -185,8 +185,6 @@ class JacobiDavidson(eps_solvers.Solver):
                 print("Converged!!")
                 return
 
-
-
     def check_mat_norms(self):
         if np.linalg.norm(self.vspace) < 1:
             sys.exit("vspace norm is tiny !! = " + str(np.linalg.norm(self.vspace)) + "ABORTING!")
