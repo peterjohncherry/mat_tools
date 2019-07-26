@@ -12,13 +12,11 @@ class JacobiDavidson4C(eps_solvers.Solver):
         else:
             self.nvirt = int(self.ndims / 2) - self.nocc
 
-
-
         self.nov = self.nvirt * self.nocc
-
         self.eindex = np.empty(self.nov)
         for ii in range(self.nov):
             self.eindex[ii] = ii
+        self.read_1e_eigvals_and_eigvecs()
 
         if self.P0_tsymm == "symmetric":
             self.get_esorted_symmetric()
@@ -26,6 +24,42 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.get_esorted_general()
         else:
             sys.exit("have not implemented guess for symmetry " + self.P0_tsymm)
+
+    def read_1e_eigvals_and_eigvecs(self):
+        self.evals_1e_all = mr.read_fortran_array("/home/peter/RS_FILES/4C/1el_eigvals")
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", self.evals_1e_all)
+
+        num_pos_evals = self.nvirt + self.nocc
+        print ("num_pos_evals = ", num_pos_evals)
+        if self.pe_rot:
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e[:num_pos_evals] = self.evals_1e_all[num_pos_evals:]
+            self.evals_1e[num_pos_evals:] = self.evals_1e_all[:num_pos_evals]
+        else:
+            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = self.evals_1e_all[num_pos_evals:]
+
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt",self.evals_1e)
+        self.eindex = np.argsort(self.evals_1e)
+
+    def get_esorted_general(self):
+    # build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc,self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii,jj] = self.evalai(ii,jj)
+
+        print ("self.nov = ", self.nov)
+        self.esorted = np.reshape(self.esorted,self.nov)
+        self.eindex = np.argsort(self.esorted)[::-1]
+        self.esorted = self.esorted[self.eindex]
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/esorted.txt", self.esorted)
+
+
+    # gets energy differences
+    # if symmetry is involved, then will get sorted eigvals in sets of 4
+    def evalai(self, occ_orb, virt_orb):
+        return self.evals_1e[occ_orb] -self.evals_1e[self.nocc+virt_orb]
 
     def solve(self):
         self.initialize_first_iteration()
@@ -46,33 +80,53 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.nov = self.nocc*self.nvirt
         self.iter = 0
         self.first = True # For the first iteration
-        self.eindex = np.empty(self.nov)
         self.evecs = np.empty((self.nov, self.nev), dtype = np.complex64)
-
-        self.read_1e_eigvals_and_eigvecs()
-
         self.construct_guess()
-        #else:
-        #    sys.exit("Preconditioner \""+self.preconditioner+"\" is not implemented \n")
 
-        print("\n self.guess = \n", self.guess)
+    def construct_guess(self):
+        self.guess = np.zeros(self.nov, np.complex64)
+        for ii in range(self.nev):
+            self.tddft4_driver_guess(ii)
+            for jj in range(self.nov):
+                self.evecs[jj,ii] = self.guess[jj]
 
-    def get_esorted_general(self):
-        print ("XXXX")
-    # build sorted list of eigval differences without imposing any symmetry constraints
-        self.esorted = np.ndarray(self.nov, dtype=np.float64)
-        for ii in range(self.nov):
-            self.esorted[ii] = self.evalai(ii)
+    # iguess : index of the eigenvector being built
+    def tddft4_driver_guess(self, iguess ):
+        if self.P0_tsymm == "general":
+            self.build_general_guess_vec(iguess)
+        elif self.P0_tsymm == "symmetric":
+            self.build_symmetric_guess_vec(iguess)
 
-        print ("esorted pre sorting, \n", self.esorted)
+    # guess used for open-shell systems
+    def build_general_guess_vec(self, iguess):
+            self.guess[self.eindex[iguess]] = 1.0+0.0j
 
-        for ii in range(self.nov-1):
-            imin = np.argmin(self.esorted[ii:self.nov])
-            if imin != 0:
-                self.esorted[[ii, imin]] = self.esorted[[imin, ii]]
-                self.eindex[[ii, imin]] = self.eindex[[imin, ii]]
+    # guess used for closed-shell systems
+    # NOT FINISHED, BUT ONLY TESTING OPEN-SHELL (GENERAL) ROUTINES FOR NOW
+    def build_symmetric_guess_vec(self, iguess):
+        znorm = (1.0+0.0j) / np.sqrt(2.0+0.0j)
+        ii = iguess%4
+        jj = (iguess+3)/4
+        kk = 4*(jj-1) +1
 
-        print("esorted post sorting \n", self.esorted)
+        i0 = self.eindex[kk]
+        i1 = self.eindex[kk+1]
+        i2 = self.eindex[kk+2]
+        i3 = self.eindex[kk+3]
+
+        if ii == 1:
+            self.guess[i0] = 1.0 * znorm  # ai(00)
+            self.guess[i3] = 1.0 * znorm  # ai(11)
+        elif ii == 2:
+            self.guess[i0] =  1.0j * znorm  # ai(00)
+            self.guess[i3] = -1.0j * znorm  # ai(11)
+        elif ii == 3:
+            self.guess[i1] = 1.0* znorm  # ai(01)
+            self.guess[i2] = 1.0 * znorm  # ai(10)
+        elif ii == 0:
+            self.guess[i1] = 1.0j * znorm  # ai(01)
+            self.guess[i2] = 1.0j * znorm  # ai(10)
+
 
     def get_esorted_symmetric():
     # Build sorted list of eigval differences with symmetry constraints imposed.
@@ -106,41 +160,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.eindex[4 * ii - 1] = imin + 1
             self.eindex[4 * ii] = imin + self.nvir + 1
 
-    def read_1e_eigvals_and_eigvecs(self):
-        print("self.rs_filename = ", self.rs_filename)
-
-        self.evals = mr.read_fortran_array("/home/peter/RS_FILES/4C/1el_eigvals")
-
-        # If pe_rot is true we allow mixing between virtual orbitals with positive and negative energies
-        if self.pe_rot:
-            self.evals_1e = np.zeros(self.ndims, dtype=np.float64)
-            for ii in range(len(self.evals)/2):
-                self.evals_1e[ii + ns2] = self.evals_1e[ii]
-        else:
-            self.evals_1e = self.evals
-
-        num_negative_energies = int(len(self.evals_1e)/2)
-        self.eindex = np.argsort(self.evals_1e)[num_negative_energies:]
-
-
-
-    def construct_guess(self):
-        self.guess = np.zeros(self.nov, np.complex64)
-        for ii in range(self.nev):
-            self.tddft4_driver_guess(ii)
-            for jj in range(self.nov):
-                self.evecs[jj,ii] = self.guess[jj]
-
-    def construct_guess_full(self):
-        sys.exit("Have not implemented guess for FULL method")
-
-    # gets energy differences
-    # if symmetry is involved, then will get sorted eigvals in sets of 4
-    # ai :
-    def evalai(self, ai):
-        iocc = (int)((ai-1)/self.nvirt) + 1
-        ivir = self.nocc+((ai - 1)%self.nvirt) + 1
-        return self.evals_1e[ivir] - self.evals_1e[iocc]
 
     def main_loop(self):
         iold = self.iter
@@ -159,44 +178,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
             if self.first :
                 print("set t_vec to u_vec guess")
                 #t_vec = self.u_vec[:,iev]
-
-    # iguess : index of the eigenvector being built
-    def tddft4_driver_guess(self, iguess ):
-        if self.P0_tsymm == "general":
-            self.build_general_guess_vec(iguess)
-        elif self.P0_tsymm == "symmetric":
-            self.build_symmetric_guess_vec(iguess)
-
-    # guess used for open-shell systems
-    def build_general_guess_vec(self, iguess):
-            self.guess[self.eindex[iguess]] = 1.0+0.0j
-
-    # guess used for closed-shell systems
-    # NOT FINISHED, BUT ONLY TESTING OPEN-SHELL (GENERAL) ROUTINES FOR NOW
-    def build_symmetric_guess_vec(self, iguess):
-
-        znorm = (1.0+0.0j) / np.sqrt(2.0+0.0j)
-        ii = iguess%4
-        jj = (iguess+3)/4
-        kk = 4*(jj-1) +1
-
-        i0 = self.eindex[kk]
-        i1 = self.eindex[kk+1]
-        i2 = self.eindex[kk+2]
-        i3 = self.eindex[kk+3]
-
-        if ii == 1:
-            self.guess[i0] = 1.0 * znorm  # ai(00)
-            self.guess[i3] = 1.0 * znorm  # ai(11)
-        elif ii == 2:
-            self.guess[i0] =  1.0j * znorm  # ai(00)
-            self.guess[i3] = -1.0j * znorm  # ai(11)
-        elif ii == 3:
-            self.guess[i1] = 1.0* znorm  # ai(01)
-            self.guess[i2] = 1.0 * znorm  # ai(10)
-        elif ii == 0:
-            self.guess[i1] = 1.0j * znorm  # ai(01)
-            self.guess[i2] = 1.0j * znorm  # ai(10)
 
     #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     def get_new_tvec(self):
