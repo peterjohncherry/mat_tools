@@ -53,9 +53,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.eindex = np.argsort(self.esorted)
         self.esorted = self.esorted[self.eindex]
 
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/esorted.txt", self.esorted)
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/eindex_sorted.txt", self.eindex)
-
     # gets energy differences
     # if symmetry is involved, then will get sorted eigvals in sets of 4
     def evalai(self, occ_orb, virt_orb):
