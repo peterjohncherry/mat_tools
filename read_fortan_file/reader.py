@@ -5,13 +5,18 @@ from scipy.io import FortranFile
 
 def read_binary_fortran_file(name, datatype, dim0, dim1=1 ):
 
+
     input_array=np.ndarray((dim0*dim1))
 
     if dim1 == 1 :
-        fmat = FortranFile(name, 'r')
-        input_array = fmat.read_reals(dtype=np.float64)
-        fmat.close()
-
+        if (datatype == "real"):
+            fmat = FortranFile(name, 'r')
+            input_array = fmat.read_reals(dtype=np.float64)
+            fmat.close()
+        elif (datatype == "int"):
+            fmat = FortranFile(name, 'r')
+            input_array = fmat.read_ints(dtype=np.int32)
+            fmat.close()
     else :
       if (datatype == "real"):
           fmat = FortranFile(name, 'r')
