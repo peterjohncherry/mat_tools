@@ -35,6 +35,7 @@ class Solver:
                     break
 
         self.maxs = self.maxdim_subspace
+        self.read_full_matrix()
 
     def get_basis_info(self, rs_filename):
         infofile = open(rs_filename, "r")

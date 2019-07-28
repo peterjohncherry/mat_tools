@@ -151,57 +151,51 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
 
             for iev in range(self.nev) :
+                iter = iter + 1
                 if skip[iev]:
                     continue
-
-                iter = iter + 1
-                if self.skip[iev]:
-                    continue
-
                 print ("iter = ", iter)
-                self.t_vec = self.u_vecs[:, iev]
                 if first :
                     self.t_vec = self.u_vecs[:,iev]
-                    self.first =False
                 else :
+                    old_t_vec = self.t_vec
                     self.get_new_tvec(iev)
+                    print("np.vdot(self.t_vec, old_t_vec) = ",np.vdot(self.t_vec, old_t_vec) )
 
                 for ii in range(iter-1):
                     utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
-            #self.vspace = np.c_[self.vspace, self.t_vec]
+
+
             #q =  self.new_orth(self.vspace)
             #print( "np.linalg.norm(q) = ", np.linalg.norm(q))
             for ii in range(self.vspace.shape[1]):
-                print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]) )
+                print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]))
                 #print("np.vdot(q, self.vspace[:," + str(ii) + "]) = ", np.vdot(q, self.vspace[:, ii]))
 
+            if first:
+                self.vspace[:,iev] = t_vec
+            else :
+                self.vspace = np.c_[self.vspace, self.t_vec]
         #    print("pre self.vspace.shape = ", self.vspace.shape)
-#            utils.test_orthogonality(self.vspace, name="vspace+t")
+            utils.test_orthogonality(self.vspace, name="vspace+t")
 
-            self.r_vecs  = np.c_[self.r_vecs, t_vec]
-            self.u_vecs = np.c_[self.u_vecs, t_vec]
-        #    print("post self.vspace.shape = ", self.vspace.shape)
-     #       utils.test_orthogonality(self.vspace, name="vspace+t")
-
-    def new_orth(self, A):
-        q = self.t_vec
-        for i in range(A.shape[1]-1):
-            rij = np.vdot(q, A[:,i])
-            q = q - rij*A[:,i]
-        return q
-
-            #    raise ValueError("invalid input matrix")
-
+            if first:
+                self.wspace[:,iev] = self.t_vec
+                first = False
+            else :
+                self.wspace = np.c_[self.wspace, self.t_vec]
 
 
     #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     def get_new_tvec(self, iev):
 
+        print("iev = ", iev)
         v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
 
         if self.method == "TDA":
+            print("into t_vec construction")
             for ii in range(self.nocc):
                 for jj in range(self.nvirt):
                     ediff = (self.evalai(ii, jj) - teta_iev)
@@ -217,9 +211,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
             uMinvu = np.vdot(self.u_vecs[:, iev], v2)
             if abs(uMinvu)> 1e-8:
                 factor = np.vdot(self.u_vecs[:, iev], v1) / uMinvu
-                return factor*v2-v1
+                self.t_vec = factor*v2-v1
             else :
-                return -v1
+                self.t_vec = -v1
         else:
             sys.exit("Have not written FULL preconditioner yet")
 
