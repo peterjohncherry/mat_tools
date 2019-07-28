@@ -5,8 +5,6 @@ import eps_solvers
 import mat_reader as mr
 import matrix_utils as utils
 
-import JacobiDavidson4c_TDA as jd
-
 class JacobiDavidson4C(eps_solvers.Solver):
 
     def initialize(self):
