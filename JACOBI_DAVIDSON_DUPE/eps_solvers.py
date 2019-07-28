@@ -22,9 +22,6 @@ class Solver:
         self.symmetry = symmetry
         self.P0_tsymm = self.symmetry
 
-        self.edegen = -99999999  # I DON'T KNOW
-        self.t4skip = -99999999  # I DON'T KNOW
-
         # maximum dimension of subspace to solve for
         if maxdim_subspace != -1:
             self.maxdim_subspace = maxdim_subspace
@@ -35,6 +32,7 @@ class Solver:
                     break
 
         self.maxs = self.maxdim_subspace
+        self.maxs = 6
         self.read_full_matrix()
 
     def get_basis_info(self, rs_filename):

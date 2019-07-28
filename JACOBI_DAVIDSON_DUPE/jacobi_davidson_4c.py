@@ -1,8 +1,10 @@
 import numpy as np
+import numpy.linalg as la
 import sys
 import eps_solvers
 import mat_reader as mr
 import matrix_utils as utils
+
 import JacobiDavidson4c_TDA as jd
 
 class JacobiDavidson4C(eps_solvers.Solver):
@@ -83,15 +85,15 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.vspace = np.zeros_like(self.u_vecs)                            # trial vectors
         self.wspace = np.zeros_like(self.u_vecs)                            # Hv
         self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
-        self.u_hat = np.zeros_like(self.u_vecs)                             # Can't remember name....
+        self.u_hats = np.zeros_like(self.u_vecs)                             # Can't remember name....
 
-        self.evecs = self.construct_guess()
+        self.construct_guess()
 
         self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64) # H represented in the space of trial vectors
 
     def construct_guess(self):
-        for ii in range(self.nev):
-            self.u_vecs[:,ii] = self.tddft4_driver_guess(ii)
+        for iev in range(self.nev):
+            self.u_vecs[:,iev] = self.tddft4_driver_guess(iev)
 
     # iguess : index of the eigenvector being built
     def tddft4_driver_guess(self, iguess ):
@@ -106,94 +108,70 @@ class JacobiDavidson4C(eps_solvers.Solver):
         guess[self.eindex[iguess]] = 1.0+0.0j
         return guess
 
-    # guess used for closed-shell systems
-    # NOT FINISHED, BUT ONLY TESTING OPEN-SHELL (GENERAL) ROUTINES FOR NOW
-    def build_symmetric_guess_vec(self, iguess):
-        znorm = (1.0+0.0j) / np.sqrt(2.0+0.0j)
-        ii = iguess%4
-        jj = (iguess+3)/4
-        kk = 4*(jj-1) +1
-
-        i0 = self.eindex[kk]
-        i1 = self.eindex[kk+1]
-        i2 = self.eindex[kk+2]
-        i3 = self.eindex[kk+3]
-
-        guess = np.zeros(self.nov, dtype=np.complex64)
-        if ii == 1:
-            guess[i0] = 1.0 * znorm  # ai(00)
-            guess[i3] = 1.0 * znorm  # ai(11)
-        elif ii == 2:
-            guess[i0] =  1.0j * znorm  # ai(00)
-            guess[i3] = -1.0j * znorm  # ai(11)
-        elif ii == 3:
-            guess[i1] = 1.0* znorm  # ai(01)
-            guess[i2] = 1.0 * znorm  # ai(10)
-        elif ii == 0:
-            guess[i1] = 1.0j * znorm  # ai(01)
-            guess[i2] = 1.0j * znorm  # ai(10)
-
-        return guess
-
-
-
     def main_loop(self):
 
         skip = np.full(self.nev, False)
         not_converged = True
         first = True
         iter = 0
-        t_vec = np.ndarray(self.nov, np.complex64)
-        while not_converged and (iter-self.maxs)<0:
-            iold = iter
+        #while not_converged and (iter-self.maxs)<0:
+        while iter < self.maxs:
 
             if (iter + self.nev > self.maxs) :
                 sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
 
-            for iev in range(self.nev) :
-                iter = iter + 1
-                if skip[iev]:
-                    continue
-                print ("iter = ", iter)
+            for iev in range(self.nev):
+                print("iter = ", iter)
                 if first :
                     self.t_vec = self.u_vecs[:,iev]
                 else :
                     old_t_vec = self.t_vec
                     self.get_new_tvec(iev)
-                    print("np.vdot(self.t_vec, old_t_vec) = ",np.vdot(self.t_vec, old_t_vec) )
+                    print("||old_t_vec["+str(iter-1)+"]||, ||self.t_vec["+str(iter)+"]|| = ", np.linalg.norm(old_t_vec), np.linalg.norm(self.t_vec))
+             #       print("np.vdot(self.t_vec, old_t_vec) = ",np.vdot(self.t_vec, old_t_vec) )
 
                 for ii in range(iter-1):
                     utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
 
+                for ii in range(self.vspace.shape[1]):
+                    print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]), end = ' ')
+                    print ("   ||t_vec["+str(iter)+"]|| =", la.norm(self.t_vec))
 
-            #q =  self.new_orth(self.vspace)
-            #print( "np.linalg.norm(q) = ", np.linalg.norm(q))
-            for ii in range(self.vspace.shape[1]):
-                print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]))
-                #print("np.vdot(q, self.vspace[:," + str(ii) + "]) = ", np.vdot(q, self.vspace[:, ii]))
+                if iter < self.nev:
+                    self.vspace[:,iev] = self.t_vec
+                else :
+                    self.vspace = np.c_[self.vspace, self.t_vec]
 
-            if first:
-                self.vspace[:,iev] = t_vec
-            else :
-                self.vspace = np.c_[self.vspace, self.t_vec]
-        #    print("pre self.vspace.shape = ", self.vspace.shape)
-            utils.test_orthogonality(self.vspace, name="vspace+t")
+                if iter < self.nev:
+                    self.wspace[:,iev] = self.sigma_constructor()
+                else :
+                    self.wspace = np.c_[self.wspace, self.sigma_constructor()]
+                iter =iter+1
 
-            if first:
-                self.wspace[:,iev] = self.t_vec
-                first = False
-            else :
-                self.wspace = np.c_[self.wspace, self.t_vec]
+            self.submat = np.matmul(self.wspace.T, self.vspace)
+            new_teta, hdiag = la.eig(self.submat)
+
+            print("new_teta = ", new_teta)
+            # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
+            # \hat{u}_{i} = hvec_{i}*w_{i},    --> eigenvectors of submat represented in wspace
+            # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
+            for iteta in range(self.nev):
+                self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
+                self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
+                self.r_vecs[:, iteta] = self.u_hats[:, iteta] - new_teta[iteta]*self.u_vecs[:, iteta]
+
+            self.teta = new_teta
+
+        print ("self.teta = ", self.teta)
+      #  print ("self.submat = ", self.submat)
 
 
     #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     def get_new_tvec(self, iev):
-
-        print("iev = ", iev)
         v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
-
+        print("teta["+str(iev)+"] = ", teta_iev)
         if self.method == "TDA":
             print("into t_vec construction")
             for ii in range(self.nocc):
@@ -205,30 +183,27 @@ class JacobiDavidson4C(eps_solvers.Solver):
                         v1[idx] = self.r_vecs[idx, iev] * ediff
                         v2[idx] = self.u_vecs[idx, iev] * ediff
                     else :
+                        print("Warning, (E_{a}-E_{i})<1e-8")
                         v1[idx] = 0.0+0.0j
                         v2[idx] = 0.0+0.0j
 
+            print("||v1|| = ", la.norm(v1))
+            print("||v2|| = ", la.norm(v2))
             uMinvu = np.vdot(self.u_vecs[:, iev], v2)
             if abs(uMinvu)> 1e-8:
                 factor = np.vdot(self.u_vecs[:, iev], v1) / uMinvu
+                print("factor = ", factor)
                 self.t_vec = factor*v2-v1
             else :
                 self.t_vec = -v1
         else:
             sys.exit("Have not written FULL preconditioner yet")
 
+    #Extend w space by doing H*t
+    def sigma_constructor(self):
+        return np.matmul(self.mat_orig, self.t_vec)
 
-
-
-
-
-
-
-
-
-
-
-
+############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
     def get_esorted_symmetric():
     # Build sorted list of eigval differences with symmetry constraints imposed.
     # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
@@ -260,4 +235,35 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.eindex[4 * ii - 2] = imin + self.nvir
             self.eindex[4 * ii - 1] = imin + 1
             self.eindex[4 * ii] = imin + self.nvir + 1
+
+
+
+  # guess used for closed-shell systems
+    # NOT FINISHED, BUT ONLY TESTING OPEN-SHELL (GENERAL) ROUTINES FOR NOW
+    def build_symmetric_guess_vec(self, iguess):
+        znorm = (1.0+0.0j) / np.sqrt(2.0+0.0j)
+        ii = iguess%4
+        jj = (iguess+3)/4
+        kk = 4*(jj-1) +1
+
+        i0 = self.eindex[kk]
+        i1 = self.eindex[kk+1]
+        i2 = self.eindex[kk+2]
+        i3 = self.eindex[kk+3]
+
+        guess = np.zeros(self.nov, dtype=np.complex64)
+        if ii == 1:
+            guess[i0] = 1.0 * znorm  # ai(00)
+            guess[i3] = 1.0 * znorm  # ai(11)
+        elif ii == 2:
+            guess[i0] =  1.0j * znorm  # ai(00)
+            guess[i3] = -1.0j * znorm  # ai(11)
+        elif ii == 3:
+            guess[i1] = 1.0* znorm  # ai(01)
+            guess[i2] = 1.0 * znorm  # ai(10)
+        elif ii == 0:
+            guess[i1] = 1.0j * znorm  # ai(01)
+            guess[i2] = 1.0j * znorm  # ai(10)
+
+        return guess
 
