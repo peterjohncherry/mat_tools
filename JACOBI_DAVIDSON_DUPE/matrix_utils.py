@@ -65,7 +65,7 @@ def orthonormalize_v_against_A_check(v,A):
     ncols = A.shape[1]
     orig_mod_v = np.linalg.norm(v)
     for ii in range(ncols):
-        v = v - np.vdot(A[:, ii], v) * A[:, ii]
+        v = v -np.vdot(A[:, ii], v) * A[:, ii]
     new_mod_v = np.linalg.norm(v)
     #print("new_mod_v = ", new_mod_v)
     #print("orig_mod_v = ", orig_mod_v)

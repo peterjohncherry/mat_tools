@@ -2,6 +2,8 @@ import numpy as np
 import sys
 import eps_solvers
 import mat_reader as mr
+import matrix_utils as utils
+import JacobiDavidson4c_TDA as jd
 
 class JacobiDavidson4C(eps_solvers.Solver):
 
@@ -49,6 +51,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
             for jj in range(self.nvirt):
                 self.esorted[ii,jj] = self.evalai(ii,jj)
 
+
         self.esorted = np.reshape(self.esorted, self.nov)
         self.eindex = np.argsort(self.esorted)
         self.esorted = self.esorted[self.eindex]
@@ -58,33 +61,37 @@ class JacobiDavidson4C(eps_solvers.Solver):
     def evalai(self, occ_orb, virt_orb):
         return  self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
+    def evalai(self, occ_orb, virt_orb):
+        return  self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
+
     def solve(self):
         self.initialize_first_iteration()
         self.main_loop()
 
     def initialize_first_iteration(self):
-        #This initialization is not really needed in python, but keep for consistencies sake
-        self.skip = np.full(self.nev, False, dtype=np.bool)
-        self.dnorm = np.zeros(self.nev,dtype=np.float64)
+        # This initialization is not really needed in python, but keep for consistency with F95 code until it is working
+
+        # Eval and norm arrays, and vector to remember convergence
         self.teta = np.zeros(self.nev, dtype=np.float64)
-        self.r_vec = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.u_hat = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.t_vec = np.zeros(self.ndim, dtype=np.complex64)
-        self.vspace = np.zeros((self.ndim, self.maxs), dtype=np.complex64)
-        self.wspace = np.zeros((self.ndim, self.maxs), dtype=np.complex64)
-        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)
+        self.dnorm = np.zeros_like(self.teta)
+        self.skip = np.full(self.nev, False, dtype=np.bool)
 
-        self.nov = self.nocc*self.nvirt
-        self.iter = 0
-        self.first = True # For the first iteration
+        self.nov = self.nocc * self.nvirt  # Dimension of guess vecs (E_a-E_i)^{-1}
 
+        # Guess space arrays
+        self.u_vecs = np.zeros((self.ndim, self.nev), dtype = np.complex64) # Ritz vectors
+        self.vspace = np.zeros_like(self.u_vecs)                            # trial vectors
+        self.wspace = np.zeros_like(self.u_vecs)                            # Hv
+        self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
+        self.u_hat = np.zeros_like(self.u_vecs)                             # Can't remember name....
 
         self.evecs = self.construct_guess()
 
+        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64) # H represented in the space of trial vectors
+
     def construct_guess(self):
-        guessvecs = np.zeros((self.nov, self.nev), dtype=np.complex64)
         for ii in range(self.nev):
-            guessvecs[:,ii] = self.tddft4_driver_guess(ii)
+            self.u_vecs[:,ii] = self.tddft4_driver_guess(ii)
 
     # iguess : index of the eigenvector being built
     def tddft4_driver_guess(self, iguess ):
@@ -128,6 +135,106 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
         return guess
 
+
+
+    def main_loop(self):
+
+        skip = np.full(self.nev, False)
+        not_converged = True
+        first = True
+        iter = 0
+        t_vec = np.ndarray(self.nov, np.complex64)
+        while not_converged and (iter-self.maxs)<0:
+            iold = iter
+
+            if (iter + self.nev > self.maxs) :
+                sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
+
+            for iev in range(self.nev) :
+                if skip[iev]:
+                    continue
+
+                iter = iter + 1
+                if self.skip[iev]:
+                    continue
+
+                print ("iter = ", iter)
+                self.t_vec = self.u_vecs[:, iev]
+                if first :
+                    self.t_vec = self.u_vecs[:,iev]
+                    self.first =False
+                else :
+                    self.get_new_tvec(iev)
+
+                for ii in range(iter-1):
+                    utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
+            #self.vspace = np.c_[self.vspace, self.t_vec]
+            #q =  self.new_orth(self.vspace)
+            #print( "np.linalg.norm(q) = ", np.linalg.norm(q))
+            for ii in range(self.vspace.shape[1]):
+                print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]) )
+                #print("np.vdot(q, self.vspace[:," + str(ii) + "]) = ", np.vdot(q, self.vspace[:, ii]))
+
+        #    print("pre self.vspace.shape = ", self.vspace.shape)
+#            utils.test_orthogonality(self.vspace, name="vspace+t")
+
+            self.r_vecs  = np.c_[self.r_vecs, t_vec]
+            self.u_vecs = np.c_[self.u_vecs, t_vec]
+        #    print("post self.vspace.shape = ", self.vspace.shape)
+     #       utils.test_orthogonality(self.vspace, name="vspace+t")
+
+    def new_orth(self, A):
+        q = self.t_vec
+        for i in range(A.shape[1]-1):
+            rij = np.vdot(q, A[:,i])
+            q = q - rij*A[:,i]
+        return q
+
+            #    raise ValueError("invalid input matrix")
+
+
+
+    #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
+    def get_new_tvec(self, iev):
+
+        v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
+        v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
+        teta_iev = self.teta[iev]
+
+        if self.method == "TDA":
+            for ii in range(self.nocc):
+                for jj in range(self.nvirt):
+                    ediff = (self.evalai(ii, jj) - teta_iev)
+                    idx = jj+self.nvirt*ii
+                    if abs(ediff) > 1e-8:
+                        ediff = 1 / ediff
+                        v1[idx] = self.r_vecs[idx, iev] * ediff
+                        v2[idx] = self.u_vecs[idx, iev] * ediff
+                    else :
+                        v1[idx] = 0.0+0.0j
+                        v2[idx] = 0.0+0.0j
+
+            uMinvu = np.vdot(self.u_vecs[:, iev], v2)
+            if abs(uMinvu)> 1e-8:
+                factor = np.vdot(self.u_vecs[:, iev], v1) / uMinvu
+                return factor*v2-v1
+            else :
+                return -v1
+        else:
+            sys.exit("Have not written FULL preconditioner yet")
+
+
+
+
+
+
+
+
+
+
+
+
+
     def get_esorted_symmetric():
     # Build sorted list of eigval differences with symmetry constraints imposed.
     # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
@@ -159,38 +266,4 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.eindex[4 * ii - 2] = imin + self.nvir
             self.eindex[4 * ii - 1] = imin + 1
             self.eindex[4 * ii] = imin + self.nvir + 1
-
-
-    def main_loop(self):
-        iold = self.iter
-        #self.tddft4_driver_guess
-        if (self.iter + self.nev > self.maxs) :
-            print("WARNING in EPS solver: Maximum number of iteration reached")
-            sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
-
-        iev = 1
-        while iev >self.nev :
-            iev = iev + 1
-            if self.skip[iev] :
-                continue
-
-            self.get_new_t_vec()
-            if self.first :
-                print("set t_vec to u_vec guess")
-                #t_vec = self.u_vec[:,iev]
-
-    #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
-    def get_new_tvec(self):
-        print("not_done")
-
-
-
-
-
-
-
-
-
-
-
 
