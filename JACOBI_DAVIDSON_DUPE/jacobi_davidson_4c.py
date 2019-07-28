@@ -51,7 +51,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
             for jj in range(self.nvirt):
                 self.esorted[ii,jj] = self.evalai(ii,jj)
 
-
         self.esorted = np.reshape(self.esorted, self.nov)
         self.eindex = np.argsort(self.esorted)
         self.esorted = self.esorted[self.eindex]
@@ -108,8 +107,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
     def main_loop(self):
 
-        skip = np.full(self.nev, False)
-        not_converged = True
         first = True
         iter = 0
         #while not_converged and (iter-self.maxs)<0:
@@ -125,8 +122,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 else :
                     old_t_vec = self.t_vec
                     self.get_new_tvec(iev)
-                    print("||old_t_vec["+str(iter-1)+"]||, ||self.t_vec["+str(iter)+"]|| = ", np.linalg.norm(old_t_vec), np.linalg.norm(self.t_vec))
-             #       print("np.vdot(self.t_vec, old_t_vec) = ",np.vdot(self.t_vec, old_t_vec) )
 
                 for ii in range(iter-1):
                     utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
