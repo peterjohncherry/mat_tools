@@ -110,3 +110,33 @@ def check_normalization(vspace, thresh = 1e-10, name = "???"):
         for a,b in vnorms :
             print(a,b)
         sys.exit("normalization of " + name + " failed... Aborting!")
+
+# will complain if imaginary part is large
+#def remove_teta_imag_part(self):
+#    for iev in range(self.nev):
+#        if abs(np.imag(self.teta[iev])) < 1e-12 :
+#            self.teta[iev] = np.real(self.teta[iev]) + 0.0j
+#        else :
+#            print("WARNING! imaginary component of teta is :", np.imag(self.teta[iev]))
+
+def remove_imag_part(complex_array):
+    for ii in range(complex_array.shape[0]):
+        for jj in range(complex_array.shape[1]):
+            if abs(np.imag(complex_array[ii,jj])) < 1e-12 :
+                complex_array[ii,jj] = np.real(complex_array[ii,jj]) + 0.0j
+
+def zero_small_parts(complex_array):
+    if len(complex_array.shape) == 2:
+        for ii in range(complex_array.shape[0]):
+            for jj in range(complex_array.shape[1]):
+                if abs(np.imag(complex_array[ii, jj])) < 1e-10:
+                    complex_array[ii,jj] = complex_array[ii,jj].real
+                if abs(np.real(complex_array[ii, jj])) < 1e-10:
+                    complex_array[ii,jj] = complex_array[ii,jj].imag
+
+    elif len(complex_array.shape) == 1:
+        for ii in range(complex_array.shape[0]):
+            if abs(np.imag(complex_array[ii])) < 1e-10:
+                complex_array[ii] = complex_array[ii].real
+            if abs(np.real(complex_array[ii])) < 1e-10:
+                complex_array[ii] = complex_array[ii].imag

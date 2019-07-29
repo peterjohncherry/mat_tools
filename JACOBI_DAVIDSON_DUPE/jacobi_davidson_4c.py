@@ -6,7 +6,7 @@ import mat_reader as mr
 import matrix_utils as utils
 
 class JacobiDavidson4C(eps_solvers.Solver):
-
+    np.set_printoptions(precision=3)
     def initialize(self):
         ns2 = int(self.ndims / 2)
         if self.pe_rot:
@@ -116,25 +116,28 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
 
             for iev in range(self.nev):
-                print("iter = ", iter)
-                if first :
+
+                if iter <self.nev:
                     self.t_vec = self.u_vecs[:,iev]
                 else :
-                    old_t_vec = self.t_vec
                     self.get_new_tvec(iev)
 
                 for ii in range(iter-1):
                     utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
 
                 for ii in range(self.vspace.shape[1]):
-                    print("np.vdot(self.t_vec, self.vspace[:,"+str(ii)+"]) = ", np.vdot(self.t_vec, self.vspace[:,ii]), end = ' ')
-                    print ("   ||t_vec["+str(iter)+"]|| =", la.norm(self.t_vec))
+                    vtoverlap = np.vdot(self.t_vec, self.vspace[:,ii])
+                    if abs(vtoverlap) > 1e-14 :
+                        print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
+                              np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
+                        print ("   ||t_vec["+str(iter)+"]|| =", la.norm(self.t_vec))
 
                 if iter < self.nev:
                     self.vspace[:,iev] = self.t_vec
                 else :
                     self.vspace = np.c_[self.vspace, self.t_vec]
 
+                print ("------------------------- vspace ----------------------------\n", self.vspace)
                 if iter < self.nev:
                     self.wspace[:,iev] = self.sigma_constructor()
                 else :
@@ -142,31 +145,35 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 iter =iter+1
 
             self.submat = np.matmul(self.wspace.T, self.vspace)
-            new_teta, hdiag = la.eig(self.submat)
+            utils.zero_small_parts(self.submat)
+            print( "------------- self.submat --------------- \n ", self.submat)
+            self.teta, hdiag = la.eig(self.submat)
+            utils.zero_small_parts(self.teta)
+            print("teta = ", self.teta)
 
-            print("new_teta = ", new_teta)
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = hvec_{i}*w_{i},    --> eigenvectors of submat represented in wspace
             # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
             for iteta in range(self.nev):
                 self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
                 self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
-                self.r_vecs[:, iteta] = self.u_hats[:, iteta] - new_teta[iteta]*self.u_vecs[:, iteta]
+                self.r_vecs[:, iteta] = self.u_hats[:, iteta] - self.teta[iteta]*self.u_vecs[:, iteta]
 
-            self.teta = new_teta
+
 
         print ("self.teta = ", self.teta)
       #  print ("self.submat = ", self.submat)
 
 
     #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
+    # t = x.M^{-1}.u_{k} - u_{k}
+    # x = ( u*_{k}.M^{-1}r_{k} ] / ( u*_{k}.M^{-1}.u_{k} ) = e/c
     def get_new_tvec(self, iev):
         v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
         print("teta["+str(iev)+"] = ", teta_iev)
-        if self.method == "TDA":
-            print("into t_vec construction")
+        if self.method == 'TDA':
             for ii in range(self.nocc):
                 for jj in range(self.nvirt):
                     ediff = (self.evalai(ii, jj) - teta_iev)
@@ -184,7 +191,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
             print("||v2|| = ", la.norm(v2))
             uMinvu = np.vdot(self.u_vecs[:, iev], v2)
             if abs(uMinvu)> 1e-8:
-                factor = np.vdot(self.u_vecs[:, iev], v1) / uMinvu
+                uMinvr = np.vdot(self.u_vecs[:, iev], v1)
+                print("uMinvr = ", uMinvr)
+                factor = uMinvr / uMinvu
                 print("factor = ", factor)
                 self.t_vec = factor*v2-v1
             else :
@@ -196,8 +205,17 @@ class JacobiDavidson4C(eps_solvers.Solver):
     def sigma_constructor(self):
         return np.matmul(self.mat_orig, self.t_vec)
 
+
+
+        #for elem in complex_array:
+        #    if abs(np.imag(elem)) < 1e-12 :
+        #        elem = np.real(elem) +0.0j
+        #    else :
+        #        print("WARNING! imaginary component of array is :", np.imag(complex_array))
+
 ############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
     def get_esorted_symmetric():
+
     # Build sorted list of eigval differences with symmetry constraints imposed.
     # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
     # E_{0i}-E_{0a}) = (E_{1i}-E_{0a}) = (E_{1i}-E_{1a}) = (E_{0i}-E_{1a})
