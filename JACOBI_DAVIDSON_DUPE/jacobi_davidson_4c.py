@@ -107,8 +107,8 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
     def main_loop(self):
 
-        first = True
         iter = 0
+
         #while not_converged and (iter-self.maxs)<0:
         while iter < self.maxs:
 
@@ -122,34 +122,30 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 else :
                     self.get_new_tvec(iev)
 
-                for ii in range(iter-1):
-                    utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
-
-                for ii in range(self.vspace.shape[1]):
-                    vtoverlap = np.vdot(self.t_vec, self.vspace[:,ii])
-                    if abs(vtoverlap) > 1e-14 :
-                        print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
-                              np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
-                        print ("   ||t_vec["+str(iter)+"]|| =", la.norm(self.t_vec))
+                self.t_vec, vt_angle = utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
+                if vt_angle < 1e-8 :
+                    print ("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
 
                 if iter < self.nev:
                     self.vspace[:,iev] = self.t_vec
                 else :
                     self.vspace = np.c_[self.vspace, self.t_vec]
 
-                print ("------------------------- vspace ----------------------------\n", self.vspace)
+                utils.print_largest_component_of_vector(self.t_vec, "t")
+
                 if iter < self.nev:
                     self.wspace[:,iev] = self.sigma_constructor()
                 else :
                     self.wspace = np.c_[self.wspace, self.sigma_constructor()]
                 iter =iter+1
 
+            utils.print_largest_component_of_vector_bundle(self.vspace, "v")
+            utils.print_largest_component_of_vector_bundle(self.wspace, "w")
+
             self.submat = np.matmul(self.wspace.T, self.vspace)
             utils.zero_small_parts(self.submat)
-            print( "------------- self.submat --------------- \n ", self.submat)
             self.teta, hdiag = la.eig(self.submat)
             utils.zero_small_parts(self.teta)
-            print("teta = ", self.teta)
 
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = hvec_{i}*w_{i},    --> eigenvectors of submat represented in wspace
@@ -158,8 +154,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
                 self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
                 self.r_vecs[:, iteta] = self.u_hats[:, iteta] - self.teta[iteta]*self.u_vecs[:, iteta]
+                self.dnorm[iteta] = la.norm(self.r_vecs[:,iteta])
 
-
+            print ("dnorm = ", self.dnorm)
 
         print ("self.teta = ", self.teta)
       #  print ("self.submat = ", self.submat)
@@ -212,8 +209,15 @@ class JacobiDavidson4C(eps_solvers.Solver):
         #        elem = np.real(elem) +0.0j
         #    else :
         #        print("WARNING! imaginary component of array is :", np.imag(complex_array))
+def tv_orth_check():
+    for ii in range(self.vspace.shape[1]):
+        vtoverlap = np.vdot(self.t_vec, self.vspace[:, ii])
+        if abs(vtoverlap) > 1e-10:
+            print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
+                  np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
+            print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
 
-############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
+    ############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
     def get_esorted_symmetric():
 
     # Build sorted list of eigval differences with symmetry constraints imposed.

@@ -33,7 +33,16 @@ class Solver:
 
         self.maxs = self.maxdim_subspace
         self.maxs = 6
-        self.read_full_matrix()
+        #self.read_full_matrix()
+
+        #self.numpy_test()
+
+    def numpy_test(self):
+        E, Vec = np.linalg.eig(self.mat_orig)
+        E = np.sort(E)
+
+        print("numpy results = ", np.real(E))
+        #print("numpy results = ", Vec[:eig])
 
     def get_basis_info(self, rs_filename):
         infofile = open(rs_filename, "r")
