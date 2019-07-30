@@ -122,9 +122,14 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 else :
                     self.get_new_tvec(iev)
 
+
+                self.t_vec[abs(self.t_vec)< 1e-10] = 0.0 +0.0j
+
                 self.t_vec, vt_angle = utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
                 if vt_angle < 1e-8 :
                     print ("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
+
+                self.t_vec[abs(self.t_vec)< 1e-10] = 0.0 +0.0j
 
                 if iter < self.nev:
                     self.vspace[:,iev] = self.t_vec
@@ -132,12 +137,20 @@ class JacobiDavidson4C(eps_solvers.Solver):
                     self.vspace = np.c_[self.vspace, self.t_vec]
 
                 utils.print_largest_component_of_vector(self.t_vec, "t")
-
+                new_w = self.sigma_constructor()
+                new_w[abs(new_w) < 1e-10] = 0.0 + 0.0j
                 if iter < self.nev:
-                    self.wspace[:,iev] = self.sigma_constructor()
+                    #self.wspace[(abs(self.wspace[:,iev]) < 1e-10), iev] = 0.0 + 0.0j # should use this, but zeros everything??
+                    self.wspace[:,iev] = new_w
                 else :
-                    self.wspace = np.c_[self.wspace, self.sigma_constructor()]
+                    #self.wspace = np.c_[self.wspace, self.sigma_constructor()]
+                    self.wspace = np.c_[self.wspace, new_w]
+
                 iter =iter+1
+
+            for iev in range(self.vspace.shape[1]):
+                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
+                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
 
             utils.print_largest_component_of_vector_bundle(self.vspace, "v")
             utils.print_largest_component_of_vector_bundle(self.wspace, "w")
@@ -170,6 +183,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
         v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
         print("teta["+str(iev)+"] = ", teta_iev)
+
         if self.method == 'TDA':
             for ii in range(self.nocc):
                 for jj in range(self.nvirt):
@@ -186,11 +200,12 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
             print("||v1|| = ", la.norm(v1))
             print("||v2|| = ", la.norm(v2))
+            print("||u["+str(iev)+"] = ", la.norm(self.u_vecs[:,iev]))
             uMinvu = np.vdot(self.u_vecs[:, iev], v2)
             if abs(uMinvu)> 1e-8:
                 uMinvr = np.vdot(self.u_vecs[:, iev], v1)
-                print("uMinvr = ", uMinvr)
                 factor = uMinvr / uMinvu
+                print("uMinvr = ", uMinvr)
                 print("factor = ", factor)
                 self.t_vec = factor*v2-v1
             else :
