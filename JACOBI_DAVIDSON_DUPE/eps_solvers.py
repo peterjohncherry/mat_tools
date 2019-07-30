@@ -77,6 +77,7 @@ class Solver:
         self.mat_orig = mr.read_fortran_array(file_seedname)
         self.ndim = np.size(self.mat_orig,0)
         print("ndim = ", self.ndim )
+        print("self.mat_orig.shape = ",self.mat_orig.shape, "\n")
         np.savetxt(file_seedname+"_py", self.mat_orig, fmt='%10.5f')
 
 

@@ -6,7 +6,8 @@ import mat_reader as mr
 import matrix_utils as utils
 
 class JacobiDavidson4C(eps_solvers.Solver):
-    np.set_printoptions(precision=3)
+    #np.set_printoptions(precision=3)
+
     def initialize(self):
         ns2 = int(self.ndims / 2)
         if self.pe_rot:
@@ -151,6 +152,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
             for iev in range(self.vspace.shape[1]):
                 np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
                 np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
+                utils.find_nonzero_elems("v_" + str(iev), self.vspace[:, iev], 1e-10)
+                utils.find_nonzero_elems("w_" + str(iev), self.wspace[:, iev], 1e-10)
+
 
             utils.print_largest_component_of_vector_bundle(self.vspace, "v")
             utils.print_largest_component_of_vector_bundle(self.wspace, "w")
@@ -218,19 +222,19 @@ class JacobiDavidson4C(eps_solvers.Solver):
         return np.matmul(self.mat_orig, self.t_vec)
 
 
-
         #for elem in complex_array:
         #    if abs(np.imag(elem)) < 1e-12 :
         #        elem = np.real(elem) +0.0j
         #    else :
         #        print("WARNING! imaginary component of array is :", np.imag(complex_array))
-def tv_orth_check():
-    for ii in range(self.vspace.shape[1]):
-        vtoverlap = np.vdot(self.t_vec, self.vspace[:, ii])
-        if abs(vtoverlap) > 1e-10:
-            print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
-                  np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
-            print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
+
+    def tv_orth_check(self):
+        for ii in range(self.vspace.shape[1]):
+            vtoverlap = np.vdot(self.t_vec, self.vspace[:, ii])
+            if abs(vtoverlap) > 1e-10:
+                print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
+                      np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
+                print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
 
     ############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
     def get_esorted_symmetric():

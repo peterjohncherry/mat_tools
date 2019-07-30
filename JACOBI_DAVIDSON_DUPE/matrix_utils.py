@@ -143,3 +143,11 @@ def print_largest_component_of_vector_bundle(vspace, space_name):
         vname = space_name + "_{" + str(iv) + "}"
         print_largest_component_of_vector(vspace[:, iv], vname)
 
+def find_nonzero_elems(seedname, input_array, threshold=1e-10):
+    non_zero_ids = np.argwhere(np.abs(input_array) > threshold)
+    outfile = open(seedname + "_nonzero.txt", "w+")
+    for idx in non_zero_ids:
+        outfile.write(str(idx) + " =  " + str(input_array[idx]) + "\n")
+    outfile.close()
+
+

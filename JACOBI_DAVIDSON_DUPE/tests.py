@@ -23,7 +23,7 @@ def test_jacobi_davidson_4c():
     jd_test = jdr4c.JacobiDavidson4C( num_eigenvalues = nevals,
                                       rs_filename = "/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")
     jd_test.initialize()
-    jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat")
+    jd_test.read_full_matrix(file_seedname = "/home/peter/RS_FILES/4C/full_mat") #should really do in initialization
     jd_test.solve()
 
 def test_array_reading():
