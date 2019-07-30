@@ -149,21 +149,23 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
                 iter =iter+1
 
+            utils.zero_small_parts(self.wspace)
+            utils.zero_small_parts(self.vspace)
+
             for iev in range(self.vspace.shape[1]):
                 np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
                 np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
                 utils.find_nonzero_elems("v_" + str(iev), self.vspace[:, iev], 1e-10)
                 utils.find_nonzero_elems("w_" + str(iev), self.wspace[:, iev], 1e-10)
 
-
-            utils.print_largest_component_of_vector_bundle(self.vspace, "v")
-            utils.print_largest_component_of_vector_bundle(self.wspace, "w")
-
             self.submat = np.matmul(self.wspace.T, self.vspace)
             utils.zero_small_parts(self.submat)
+            np.savetxt("submat_" + str(iter), self.submat)
             self.teta, hdiag = la.eig(self.submat)
-            utils.zero_small_parts(self.teta)
+            #utils.zero_small_parts(self.teta)
 
+            np.savetxt("teta_" + str(iter), self.teta)
+            np.savetxt("hdiag_" + str(iter), hdiag)
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = hvec_{i}*w_{i},    --> eigenvectors of submat represented in wspace
             # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
