@@ -137,15 +137,14 @@ def zero_small_parts(complex_array):
                 complex_array[ii] = complex_array[ii].imag
 
 
-def print_largest_component_of_vector(vec, vname):
-    print(vname + "[" + str(vec.argmax()) + "] = ", vec.max())
+def print_largest_component_of_vector(vec, name):
+    print(name + "[" + str(vec.argmax()) + "] = ", vec.max())
 
 
 def print_largest_component_of_vector_bundle(vspace, space_name):
     print("------------------------- " + space_name + "----------------------------")
     for iv in range(vspace.shape[1]):
-        vname = space_name + "_{" + str(iv) + "}"
-        print_largest_component_of_vector(vspace[:, iv], vname)
+        print_largest_component_of_vector(vspace[:, iv], space_name + "_{" + str(iv) + "}")
 
 
 def find_nonzero_elems(seedname, input_array, threshold=1e-10):

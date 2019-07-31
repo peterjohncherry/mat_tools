@@ -6,9 +6,8 @@ import sys
 import numpy as np
 from scipy.io import FortranFile
 
-def read_binary_fortran_file(name, datatype, dim0, dim1=1 ):
 
-    input_array=np.ndarray((dim0*dim1))
+def read_binary_fortran_file(name, datatype, dim0, dim1=1 ):
 
     if dim1 == 1 :
         fmat = FortranFile(name, 'r')
@@ -16,26 +15,27 @@ def read_binary_fortran_file(name, datatype, dim0, dim1=1 ):
         fmat.close()
 
     else :
-      if (datatype == "real"):
-          fmat = FortranFile(name, 'r')
-          input_array = fmat.read_reals(dtype=np.float64)
-          input_array = input_array.reshape((dim0,dim1)).transpose()
-          fmat.close()
+        if datatype == "real":
+            fmat = FortranFile(name, 'r')
+            input_array = fmat.read_reals(dtype=np.float64)
+            input_array = input_array.reshape((dim0,dim1)).transpose()
+            fmat.close()
 
-      elif (datatype == "int"):
-          fmat = FortranFile(name, 'r')
-          input_array = fmat.read_ints(dtype=np.int32)
-          input_array = input_array.reshape((dim0,dim1)).transpose()
-          fmat.close()
+        elif datatype == "int":
+            fmat = FortranFile(name, 'r')
+            input_array = fmat.read_ints(dtype=np.int32)
+            input_array = input_array.reshape((dim0,dim1)).transpose()
+            # fmat.close()
 
-      elif ( datatype == "complex" ):
-          sys.exit("reading of complex matrices is not directly possible, must write out real and imag parts " \
-                   "as two seperate real matrices\n")
+          elif datatype == "complex":
+              sys.exit("reading of complex matrices is not directly possible, must write out real and imag parts " \
+                       "as two separate real matrices\n")
 
-      else :
-          sys.exit("reading of datatype \"" +  datatype + "\" is not implemented\n ")
+        else :
+              sys.exit("reading of datatype \"" +  datatype + "\" is not implemented\n ")
 
     return input_array
+
 
 #reads the matrix info file which is generated to aid reading of fortran binary file
 def read_array_info_file(name):
@@ -104,6 +104,3 @@ def read_array_sequence(basename, save_as_numpy_file=True, save_as_text_file=Fal
         for seedname in seedname_list:
             array_list.append(read_fortran_array(seedname))
         return array_list
-
-#read_array_sequence(basename, save_as_npy, save_as_text)
-
