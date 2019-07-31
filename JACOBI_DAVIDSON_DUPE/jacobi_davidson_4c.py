@@ -34,7 +34,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
         np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
 
         num_pos_evals = self.nvirt + self.nocc
-        print ("num_pos_evals = ", num_pos_evals)
+        print("num_pos_evals = ", num_pos_evals)
         if self.pe_rot:
             self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
             self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
@@ -80,7 +80,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.vspace = np.zeros_like(self.u_vecs)                            # trial vectors
         self.wspace = np.zeros_like(self.u_vecs)                            # Hv
         self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
-        self.u_hats = np.zeros_like(self.u_vecs)                             # Can't remember name....
+        self.u_hats = np.zeros_like(self.u_vecs)                            # Can't remember name....
         self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)  # H represented in trial vector space
 
         self.construct_guess()
@@ -115,7 +115,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
                 if it < self.nev:
                     self.t_vec = self.u_vecs[:, iev]
-                else :
+                else:
                     self.get_new_tvec(iev)
 
                 self.t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(self.t_vec, self.vspace)
@@ -139,7 +139,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev], fmt='%.4f')
                 np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev], fmt='%.4f')
 
-            self.submat = np.matmul(self.wspace.T, self.vspace)
+            self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
             np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
             self.teta, hdiag = la.eig(self.submat)
 
@@ -153,9 +153,15 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
                 self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
                 self.r_vecs[:, iteta] = self.u_hats[:, iteta] - self.teta[iteta]*self.u_vecs[:, iteta]
-                self.dnorm[iteta] = la.norm(self.r_vecs[:,iteta])
+                self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
 
-            print ("dnorm = ", self.dnorm)
+            # Checking
+            for iev in range(self.u_vecs.shape[1]):
+                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev], fmt='%.4f')
+                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev], fmt='%.4f')
+                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev], fmt='%.4f')
+            print("dnorm = ", self.dnorm)
+            # end checking
 
         print("self.teta = ", self.teta)
 
@@ -212,7 +218,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
 
     def get_esorted_symmetric(self):
-
         # Build sorted list of eigval differences with symmetry constraints imposed.
         # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
         # E_{0i}-E_{0a}) = (E_{1i}-E_{0a}) = (E_{1i}-E_{1a}) = (E_{0i}-E_{1a})
