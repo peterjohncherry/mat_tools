@@ -81,10 +81,9 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.wspace = np.zeros_like(self.u_vecs)                            # Hv
         self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
         self.u_hats = np.zeros_like(self.u_vecs)                             # Can't remember name....
+        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)  # H represented in trial vector space
 
         self.construct_guess()
-
-        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)  # H represented in the space of trial vectors
 
     def construct_guess(self):
         for iev in range(self.nev):
@@ -119,7 +118,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 else :
                     self.get_new_tvec(iev)
 
-                self.t_vec, vt_angle = utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
+                self.t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(self.t_vec, self.vspace)
                 if vt_angle < 1e-8:
                     print("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
 
