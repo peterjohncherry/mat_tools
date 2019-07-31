@@ -10,9 +10,6 @@ class Solver:
 
         self.rs_filename = rs_filename
         self.nev = num_eigenvalues  # number of eigenvalues to solve for
-        self.threshold = threshold
-        self.get_basis_info(rs_filename)
-
         self.threshold = threshold  # convergence threshold for solver
         self.solver = solver  # Solver type
         self.solver_type = self.solver
@@ -22,17 +19,6 @@ class Solver:
         self.restart = restart  # True if restarting from previous cycle
         self.symmetry = symmetry
         self.P0_tsymm = self.symmetry
-
-        # maximum dimension of subspace to solve for
-        if maxdim_subspace != -1:
-            self.maxs = maxdim_subspace
-        else:
-            for ii in range(10):
-                if self.nev * (10 - ii) < self.ndimc:
-                    self.maxs = self.nev * (10 - ii)
-                    break
-
-        self.maxs = 6  # temporary setting for testing
 
         # Solver specific variables, not set here
         self.submat = None
@@ -61,6 +47,20 @@ class Solver:
 
         self.mat_orig = None
         self.ndim = None
+        self.esorted = None
+
+        self.get_basis_info(rs_filename)
+
+        # maximum dimension of subspace to solve for
+        if maxdim_subspace != -1:
+            self.maxs = maxdim_subspace
+        else:
+            for ii in range(10):
+                if self.nev * (10 - ii) < self.ndimc:
+                    self.maxs = self.nev * (10 - ii)
+                    break
+
+        self.maxs = 6  # temporary setting for testing
 
     def numpy_test(self, print_eigvals=True, print_eigvecs=False):
         eigvals, eigvecs = np.linalg.eig(self.mat_orig)
@@ -68,6 +68,7 @@ class Solver:
 
         if print_eigvals:
             print("numpy results = ", np.real(eigvals[:self.nev]))
+
         if print_eigvecs:
             print("numpy results = ", eigvecs[:self.nev])
 
