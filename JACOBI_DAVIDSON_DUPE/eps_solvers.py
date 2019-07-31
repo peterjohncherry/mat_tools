@@ -40,10 +40,10 @@ class Solver:
         self.evals_1e = None
         self.eindex = None
 
-        self.ndims = None
-        self.ndimc = None
-        self.nocc = None
-        self.nvirt = None
+        self.ndims = -1
+        self.ndimc = -1
+        self.nocc = -1
+        self.nvirt = -1
 
         self.mat_orig = None
         self.ndim = None
