@@ -6,7 +6,7 @@ import mat_reader as mr
 import matrix_utils as utils
 
 class JacobiDavidson4C(eps_solvers.Solver):
-    #np.set_printoptions(precision=3)
+    np.set_printoptions(precision=4)
 
     def initialize(self):
         ns2 = int(self.ndims / 2)
@@ -46,7 +46,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.eindex = np.argsort(self.evals_1e)
 
     def get_esorted_general(self):
-    # build sorted list of eigval differences without imposing any symmetry constraints
+        # Build sorted list of eigval differences without imposing any symmetry constraints
         self.esorted = np.ndarray((self.nocc,self.nvirt), dtype=np.float64)
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
@@ -59,10 +59,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
     # gets energy differences
     # if symmetry is involved, then will get sorted eigvals in sets of 4
     def evalai(self, occ_orb, virt_orb):
-        return  self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
-
-    def evalai(self, occ_orb, virt_orb):
-        return  self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
+        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     def solve(self):
         self.initialize_first_iteration()
@@ -75,8 +72,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
         self.teta = np.zeros(self.nev, dtype=np.float64)
         self.dnorm = np.zeros_like(self.teta)
         self.skip = np.full(self.nev, False, dtype=np.bool)
-
-        self.nov = self.nocc * self.nvirt  # Dimension of guess vecs (E_a-E_i)^{-1}
+        self.nov = self.nocc * self.nvirt  # Dimension of guess vectors, one for each possible (E_a-E_i)^{-1}
 
         # Guess space arrays
         self.u_vecs = np.zeros((self.ndim, self.nev), dtype = np.complex64) # Ritz vectors
@@ -94,7 +90,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.u_vecs[:,iev] = self.tddft4_driver_guess(iev)
 
     # iguess : index of the eigenvector being built
-    def tddft4_driver_guess(self, iguess ):
+    def tddft4_driver_guess(self, iguess):
         if self.P0_tsymm == "general":
             return self.build_general_guess_vec(iguess)
         elif self.P0_tsymm == "symmetric":
@@ -109,63 +105,48 @@ class JacobiDavidson4C(eps_solvers.Solver):
     def main_loop(self):
 
         iter = 0
-
-        #while not_converged and (iter-self.maxs)<0:
+        # While not_converged and (iter-self.maxs)<0:
         while iter < self.maxs:
 
-            if (iter + self.nev > self.maxs) :
+            if (iter + self.nev) > self.maxs:
                 sys.exit("WARNING in EPS solver: Maximum number of iteration reached")
 
             for iev in range(self.nev):
 
-                if iter <self.nev:
+                if iter < self.nev:
                     self.t_vec = self.u_vecs[:,iev]
                 else :
                     self.get_new_tvec(iev)
 
-
-                self.t_vec[abs(self.t_vec)< 1e-10] = 0.0 +0.0j
-
                 self.t_vec, vt_angle = utils.orthonormalize_v_against_A_check(self.t_vec, self.vspace)
                 if vt_angle < 1e-8 :
-                    print ("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
-
-                self.t_vec[abs(self.t_vec)< 1e-10] = 0.0 +0.0j
+                    print("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
 
                 if iter < self.nev:
-                    self.vspace[:,iev] = self.t_vec
+                    self.vspace[:, iev] = self.t_vec
                 else :
                     self.vspace = np.c_[self.vspace, self.t_vec]
 
-                utils.print_largest_component_of_vector(self.t_vec, "t")
                 new_w = self.sigma_constructor()
-                new_w[abs(new_w) < 1e-10] = 0.0 + 0.0j
                 if iter < self.nev:
-                    #self.wspace[(abs(self.wspace[:,iev]) < 1e-10), iev] = 0.0 + 0.0j # should use this, but zeros everything??
-                    self.wspace[:,iev] = new_w
-                else :
-                    #self.wspace = np.c_[self.wspace, self.sigma_constructor()]
+                    self.wspace[:, iev] = new_w
+                else:
                     self.wspace = np.c_[self.wspace, new_w]
 
-                iter =iter+1
+                iter = iter+1
 
-            utils.zero_small_parts(self.wspace)
-            utils.zero_small_parts(self.vspace)
 
             for iev in range(self.vspace.shape[1]):
-                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
-                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
-                utils.find_nonzero_elems("v_" + str(iev), self.vspace[:, iev], 1e-10)
-                utils.find_nonzero_elems("w_" + str(iev), self.wspace[:, iev], 1e-10)
+                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev], fmt='%.4f')
+                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev], fmt='%.4f')
 
             self.submat = np.matmul(self.wspace.T, self.vspace)
-            utils.zero_small_parts(self.submat)
-            np.savetxt("submat_" + str(iter), self.submat)
+            np.savetxt("submat_" + str(iter), self.submat, fmt='%.4f')  # TESTING
             self.teta, hdiag = la.eig(self.submat)
-            #utils.zero_small_parts(self.teta)
 
-            np.savetxt("teta_" + str(iter), self.teta)
-            np.savetxt("hdiag_" + str(iter), hdiag)
+            np.savetxt("teta_" + str(iter), self.teta, fmt='%.4f')  # TESTING
+            np.savetxt("hdiag_" + str(iter), hdiag, fmt='%.4f')  # TESTING
+
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = hvec_{i}*w_{i},    --> eigenvectors of submat represented in wspace
             # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
@@ -178,10 +159,8 @@ class JacobiDavidson4C(eps_solvers.Solver):
             print ("dnorm = ", self.dnorm)
 
         print ("self.teta = ", self.teta)
-      #  print ("self.submat = ", self.submat)
 
-
-    #1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
+    # 1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     # t = x.M^{-1}.u_{k} - u_{k}
     # x = ( u*_{k}.M^{-1}r_{k} ] / ( u*_{k}.M^{-1}.u_{k} ) = e/c
     def get_new_tvec(self, iev):
@@ -204,27 +183,23 @@ class JacobiDavidson4C(eps_solvers.Solver):
                         v1[idx] = 0.0+0.0j
                         v2[idx] = 0.0+0.0j
 
-            print("||v1|| = ", la.norm(v1))
-            print("||v2|| = ", la.norm(v2))
-            print("||u["+str(iev)+"] = ", la.norm(self.u_vecs[:,iev]))
             uMinvu = np.vdot(self.u_vecs[:, iev], v2)
             if abs(uMinvu)> 1e-8:
                 uMinvr = np.vdot(self.u_vecs[:, iev], v1)
                 factor = uMinvr / uMinvu
-                print("uMinvr = ", uMinvr)
-                print("factor = ", factor)
+                print("uMinvr = ", uMinvr, "uMinvu = ", uMinvu, "factor = ", factor)
                 self.t_vec = factor*v2-v1
             else :
                 self.t_vec = -v1
         else:
             sys.exit("Have not written FULL preconditioner yet")
 
-    #Extend w space by doing H*t
+    # Extend w space by doing H*t
     def sigma_constructor(self):
         return np.matmul(self.mat_orig, self.t_vec)
 
 
-        #for elem in complex_array:
+        # For elem in complex_array:
         #    if abs(np.imag(elem)) < 1e-12 :
         #        elem = np.real(elem) +0.0j
         #    else :
@@ -239,7 +214,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
 
     ############################ SYMMETRIZED ROUTINES FOR LATER INCORPORATION ######################################
-    def get_esorted_symmetric():
+    def get_esorted_symmetric(self):
 
     # Build sorted list of eigval differences with symmetry constraints imposed.
     # Blocks of 4 identical energy differences due to time reversal symmetry i.e.,
@@ -272,8 +247,6 @@ class JacobiDavidson4C(eps_solvers.Solver):
             self.eindex[4 * ii - 1] = imin + 1
             self.eindex[4 * ii] = imin + self.nvir + 1
 
-
-
   # guess used for closed-shell systems
     # NOT FINISHED, BUT ONLY TESTING OPEN-SHELL (GENERAL) ROUTINES FOR NOW
     def build_symmetric_guess_vec(self, iguess):
@@ -302,4 +275,3 @@ class JacobiDavidson4C(eps_solvers.Solver):
             guess[i2] = 1.0j * znorm  # ai(10)
 
         return guess
-

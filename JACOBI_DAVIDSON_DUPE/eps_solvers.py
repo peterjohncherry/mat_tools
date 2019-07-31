@@ -1,5 +1,7 @@
 import numpy as np
 import mat_reader as mr
+import sys
+
 
 class Solver:
 
@@ -7,8 +9,7 @@ class Solver:
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
 
         self.rs_filename = rs_filename
-        self.num_eigenvalues = num_eigenvalues  # number of eigenvalues to solve for
-        self.nev = self.num_eigenvalues
+        self.nev = num_eigenvalues  # number of eigenvalues to solve for
         self.threshold = threshold
         self.get_basis_info(rs_filename)
 
@@ -24,31 +25,58 @@ class Solver:
 
         # maximum dimension of subspace to solve for
         if maxdim_subspace != -1:
-            self.maxdim_subspace = maxdim_subspace
+            self.maxs = maxdim_subspace
         else:
             for ii in range(10):
-                if self.num_eigenvalues * (10 - ii) < self.ndimc:
-                    self.maxdim_subspace = (self.num_eigenvalues) * (10 - ii)
+                if self.nev * (10 - ii) < self.ndimc:
+                    self.maxs = self.nev * (10 - ii)
                     break
 
-        self.maxs = self.maxdim_subspace
-        self.maxs = 6
-        #self.read_full_matrix()
+        self.maxs = 6  # temporary setting for testing
 
-        #self.numpy_test()
+        # Solver specific variables, not set here
+        self.submat = None
+        self.teta = None
+        self.t_vec = None
 
-    def numpy_test(self):
-        E, Vec = np.linalg.eig(self.mat_orig)
-        E = np.sort(E)
+        self.dnorm = None
+        self.skip = None
+        self.nov = None
 
-        print("numpy results = ", np.real(E))
-        #print("numpy results = ", Vec[:eig])
+        # Guess space arrays
+        self.u_vecs = None
+        self.vspace = None
+        self.wspace = None
+        self.r_vecs = None
+        self.u_hats = None
+
+        # Ritz value arrays
+        self.evals_1e = None
+        self.eindex = None
+
+        self.ndims = None
+        self.ndimc = None
+        self.nocc = None
+        self.nvirt = None
+
+        self.mat_orig = None
+        self.ndim = None
+
+    def numpy_test(self, print_eigvals=True, print_eigvecs=False):
+        eigvals, eigvecs = np.linalg.eig(self.mat_orig)
+        eigvals = np.sort(eigvals)
+
+        if print_eigvals:
+            print("numpy results = ", np.real(eigvals[:self.nev]))
+        if print_eigvecs:
+            print("numpy results = ", eigvecs[:self.nev])
 
     def get_basis_info(self, rs_filename):
         infofile = open(rs_filename, "r")
-
+        got_ndimc = False
+        got_ndims = False
+        got_nocc = False
         for line in infofile.readlines():
-            # print(line.find("Total number of cartesian GTO functions"))
             if line.find("Total number of spherical GTO functions") != -1:
                 print(int(line.split()[-1]))
                 self.ndims = int(line.split()[-1]) * 4
@@ -72,15 +100,10 @@ class Solver:
 
         self.nvirt = self.ndimc * 2 - self.nocc
 
-    def read_full_matrix(self, file_seedname = "/home/peter/RS_FILES/4C/full_mat"):
+    def read_full_matrix(self, file_seedname="/home/peter/RS_FILES/4C/full_mat"):
         print("reading in full matrix", file_seedname)
         self.mat_orig = mr.read_fortran_array(file_seedname)
-        self.ndim = np.size(self.mat_orig,0)
-        print("ndim = ", self.ndim )
-        print("self.mat_orig.shape = ",self.mat_orig.shape, "\n")
+        self.ndim = np.size(self.mat_orig, 0)
+        print("ndim = ", self.ndim)
+        print("self.mat_orig.shape = ", self.mat_orig.shape, "\n")
         np.savetxt(file_seedname+"_py", self.mat_orig, fmt='%10.5f')
-
-
-
-
-
