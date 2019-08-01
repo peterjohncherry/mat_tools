@@ -33,6 +33,7 @@ def test_jacobi_davidson_full_4c():
     jd_test = jd_f_4c.JacobiDavidsonFull4C(num_eigenvalues=nevals,
                                        rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
     jd_test.initialize()
+    jd_test.solve()
 
 
 def test_array_reading():
