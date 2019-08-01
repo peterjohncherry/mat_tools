@@ -105,6 +105,10 @@ class JacobiDavidson4C(eps_solvers.Solver):
     def main_loop(self):
 
         it = 0
+        skip = np.full(self.maxs, False)
+        print ("skip = ", skip)
+        print ("len(skip) = ", len(skip))
+        converged = False
         # While not_converged and (it-self.maxs)<0:
         while it < self.maxs:
 
@@ -164,6 +168,25 @@ class JacobiDavidson4C(eps_solvers.Solver):
 #                tmp_uhat = np.matmul(self.wspace, hdiag[:, iteta])
 
             self.teta = ritz_vals
+            for ii in range(len(self.dnorm)):
+                if self.dnorm[ii] <= self.threshold:
+                    skip[ii] = True
+                else :
+                    skip[ii] = False
+
+            for ii in range(iev+1):
+                if ii == iev :
+                    converged = True
+                    break
+                elif skip[ii] == False:
+                    break
+
+        if converged:
+            print ("Converged !!! ")
+            print("self.teta = ", self.teta)
+
+
+
                 #tmp_rvec = tmp_uhat - self.teta[iteta]*tmp_uvec
                 #self.dnorm[iteta] = la.norm(tmp_rvec)
             # Checking
