@@ -5,7 +5,7 @@ import sys
 
 class Solver:
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-8, maxdim_subspace=-1,
+    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=-1,
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
 
         self.rs_filename = rs_filename
@@ -60,7 +60,7 @@ class Solver:
                     self.maxs = self.nev * (10 - ii)
                     break
 
-        self.maxs = 6  # temporary setting for testing
+        self.maxs = 30  # temporary setting for testing
 
     def numpy_test(self, print_eigvals=True, print_eigvecs=False):
         eigvals, eigvecs = np.linalg.eig(self.mat_orig)

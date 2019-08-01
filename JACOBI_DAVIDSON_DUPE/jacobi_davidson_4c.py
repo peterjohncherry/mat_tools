@@ -168,22 +168,31 @@ class JacobiDavidson4C(eps_solvers.Solver):
 #                tmp_uhat = np.matmul(self.wspace, hdiag[:, iteta])
 
             self.teta = ritz_vals
+
             for ii in range(len(self.dnorm)):
+                print ("HELLO")
+                print ("self.threshold = ", self.threshold)
                 if self.dnorm[ii] <= self.threshold:
                     skip[ii] = True
                 else :
                     skip[ii] = False
 
-            for ii in range(iev+1):
-                if ii == iev :
+            for ii in range(self.nev+1):
+                if ii == self.nev :
                     converged = True
                     break
-                elif skip[ii] == False:
+                if skip[ii] == False:
                     break
 
+
+            print(" it = ", it)
+            print("self.dnorm = ", self.dnorm)
+            print("skip = ", skip)
+
         if converged:
-            print ("Converged !!! ")
+            #print ("Converged !!! ")
             print("self.teta = ", self.teta)
+            sys.exit("Converged!!")
 
 
 
