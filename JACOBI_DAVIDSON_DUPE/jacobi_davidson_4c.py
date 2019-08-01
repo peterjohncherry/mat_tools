@@ -214,10 +214,10 @@ class JacobiDavidson4C(eps_solvers.Solver):
         print("teta["+str(iev)+"] = ", teta_iev)
 
         if self.method == 'TDA':
+            idx = 0
             for ii in range(self.nocc):
                 for jj in range(self.nvirt):
                     ediff = (self.evalai(ii, jj) - teta_iev)
-                    idx = jj+self.nvirt*ii
                     if abs(ediff) > 1e-8:
                         ediff = 1 / ediff
                         v1[idx] = self.r_vecs[idx, iev] * ediff
@@ -226,6 +226,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
                         print("Warning, (E_{a}-E_{i})<1e-8")
                         v1[idx] = 0.0+0.0j
                         v2[idx] = 0.0+0.0j
+                    idx += 1
 
             u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
             if abs(u_m1_u) > 1e-8:
@@ -235,7 +236,36 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 self.t_vec = factor*v2-v1
             else:
                 self.t_vec = -v1
-        else:
+
+        elif self.method == 'FULL':
+            idx = 0
+            for ii in range(self.nocc):
+                for jj in range(self.nvirt):
+                    ediff = (self.evalai(ii, jj) - teta_iev)
+
+                    if abs(ediff) > 1e-8:
+                        ediff = 1 / ediff
+                        v1[idx] = self.r_vecs[idx, iev] * ediff
+                        v2[idx] = self.u_vecs[idx, iev] * ediff
+                    else:
+                        print("Warning, (E_{a}-E_{i})<1e-8")
+                        v1[idx] = 0.0+0.0j
+                        v2[idx] = 0.0+0.0j
+                    idx += 1
+
+            for ii in range(self.nocc):
+                for jj in range(self.nvirt):
+                    ediff = -self.evalai(ii, jj) - teta_iev
+                    if abs(ediff) > 1e-8:
+                        ediff = 1 / ediff
+                        v1[idx] = self.r_vecs[idx, iev] * ediff
+                        v2[idx] = self.u_vecs[idx, iev] * ediff
+                    else:
+                        print("Warning, (-E_{a}-E_{i})<1e-8")
+                        v1[idx] = 0.0+0.0j
+                        v2[idx] = 0.0+0.0j
+                    idx += 1
+
             sys.exit("Have not written FULL preconditioner yet")
 
     # Extend w space by doing H*t

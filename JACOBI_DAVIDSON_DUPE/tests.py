@@ -1,5 +1,6 @@
 import numpy as np
 import jacobi_davidson_4c as jdr4c
+import jacobi_davidson_full_4c as jd_f_4c
 import mat_reader as mr
 
 
@@ -26,6 +27,12 @@ def test_jacobi_davidson_4c():
     jd_test.initialize()
     jd_test.read_full_matrix(file_seedname="/home/peter/RS_FILES/4C/full_mat")  # should really do in initialization
     jd_test.solve()
+
+def test_jacobi_davidson_full_4c():
+    nevals = 3
+    jd_test = jd_f_4c.JacobiDavidsonFull4C(num_eigenvalues=nevals,
+                                       rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
+    jd_test.initialize()
 
 
 def test_array_reading():
