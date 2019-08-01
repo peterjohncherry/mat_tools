@@ -169,8 +169,7 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
             self.teta = ritz_vals
 
-            for ii in range(len(self.dnorm)):
-                print ("HELLO")
+            for ii in range(self.nev):
                 print ("self.threshold = ", self.threshold)
                 if self.dnorm[ii] <= self.threshold:
                     skip[ii] = True
@@ -179,21 +178,15 @@ class JacobiDavidson4C(eps_solvers.Solver):
 
             for ii in range(self.nev+1):
                 if ii == self.nev :
-                    converged = True
+                    print("self.teta = ", self.teta)
+                    sys.exit("Converged!!")
                     break
                 if skip[ii] == False:
                     break
 
-
             print(" it = ", it)
             print("self.dnorm = ", self.dnorm)
             print("skip = ", skip)
-
-        if converged:
-            #print ("Converged !!! ")
-            print("self.teta = ", self.teta)
-            sys.exit("Converged!!")
-
 
 
                 #tmp_rvec = tmp_uhat - self.teta[iteta]*tmp_uvec
