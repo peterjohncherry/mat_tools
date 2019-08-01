@@ -6,7 +6,7 @@ import mat_reader as mr
 import matrix_utils as utils
 
 
-class JacobiDavidson4C(eps_solvers.Solver):
+class JacobiDavidsonTDA4C(eps_solvers.Solver):
     np.set_printoptions(precision=4)
 
     def initialize(self):
