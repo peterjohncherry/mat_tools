@@ -136,8 +136,10 @@ class JacobiDavidson4C(eps_solvers.Solver):
                 it = it+1
 
             for iev in range(self.vspace.shape[1]):
-                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev], fmt='%.4f')
-                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev], fmt='%.4f')
+                utils.zero_small_parts(self.vspace)
+                utils.zero_small_parts(self.wspace)
+                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])#, fmt='%.4f')
+                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])#, fmt='%.4f')
 
             self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
             np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
@@ -149,17 +151,32 @@ class JacobiDavidson4C(eps_solvers.Solver):
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = h_{ij}*w_{i},    --> eigenvectors of submat represented in wspace
             # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
-            for iteta in range(self.nev):
+
+
+
+            for iteta in range(self.u_vecs.shape[1]):
                 self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
                 self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
-                self.r_vecs[:, iteta] = self.u_hats[:, iteta] - self.teta[iteta]*self.u_vecs[:, iteta]
+                self.r_vecs[:, iteta] += self.u_hats[:, iteta] - self.teta[iteta] * self.u_vecs[:, iteta]
                 self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
+#                tmp_uvec = np.matmul(self.vspace, hdiag[:, iteta])
+#                tmp_uhat = np.matmul(self.wspace, hdiag[:, iteta])
+
+                #tmp_rvec = tmp_uhat - self.teta[iteta]*tmp_uvec
+                #self.dnorm[iteta] = la.norm(tmp_rvec)
+
+
+
+
 
             # Checking
+            utils.zero_small_parts(self.u_hats)
+            utils.zero_small_parts(self.u_vecs)
+            utils.zero_small_parts(self.r_vecs)
             for iev in range(self.u_vecs.shape[1]):
-                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev], fmt='%.4f')
-                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev], fmt='%.4f')
-                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev], fmt='%.4f')
+                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])#, fmt='%.4f')
+                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])#, fmt='%.4f')
+                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])#, fmt='%.4f')
             print("dnorm = ", self.dnorm)
             # end checking
 
