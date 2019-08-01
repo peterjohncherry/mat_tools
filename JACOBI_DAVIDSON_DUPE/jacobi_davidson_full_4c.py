@@ -18,19 +18,44 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2*self.nov
         print("self.ndim = ", self.ndim )
 
-        self.eindex = np.empty(self.nov)
-        for ii in range(self.nov):
-            self.eindex[ii] = ii
-
         self.read_1e_eigvals_and_eigvecs(seedname = "/home/peter/RS_FILES/4C/1el_eigvals")
+        self.get_esorted_general()
 
         self.u_vecs = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.construct_guess()
+        #self.construct_guess()
 
+        for iev in range(self.nev):
+            self.u_vecs[self.eindex[self.nev],iev] = 1.0+ 0.0j
+
+        print("self.esorted = ", self.esorted)
+        print("self.eindex = ", self.eindex)
+
+        # check
+        for iev in range(self.nev):
+            np.savetxt("guess_"+str(iev)+".txt", self.u_vecs[:, iev])
+        # end check
+
+    def get_esorted_general(self):
+        # Build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii, jj] = self.evalai(ii, jj)
+
+        self.esorted = np.reshape(self.esorted, self.nov)
+        self.eindex = np.argsort(self.esorted)
+        self.esorted = self.esorted[self.eindex]
+
+    def evalai(self, occ_orb, virt_orb):
+        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     def construct_guess(self):
+        if self.nov < self.ndim :
+            for iev in range(self.nev):
+                self.u_vecs[self.nov:, iev] = 0.0 + 0.0j
+
         for iev in range(self.nev):
-            self.u_vecs[:, iev] = self.tddft4_driver_guess(iev)
+            self.u_vecs[:self.nov, iev] = self.tddft4_driver_guess(iev)
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
         evals_1e_all = mr.read_fortran_array(seedname)
@@ -47,7 +72,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.evals_1e = evals_1e_all[num_pos_evals:]
 
         np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
-        self.eindex = np.argsort(self.evals_1e)
 
     # iguess : index of the eigenvector being built
     def tddft4_driver_guess(self, iguess):
@@ -59,7 +83,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     # guess used for open-shell systems
     def build_general_guess_vec(self, iguess):
-        guess = np.zeros(self.ndim, dtype=np.complex64)
+        guess = np.zeros(self.nov, dtype=np.complex64)
         guess[self.eindex[iguess]] = 1.0+0.0j
         return guess
 
