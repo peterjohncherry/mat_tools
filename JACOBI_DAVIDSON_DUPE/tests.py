@@ -2,6 +2,7 @@ import numpy as np
 import jacobi_davidson_tda_4c as jdr4c
 import jacobi_davidson_full_4c as jd_f_4c
 import mat_reader as mr
+import matrix_utils as utils
 
 
 def numpy_check(matrix_orig, num_eig, print_eigvals=True, print_eigvecs=False):
@@ -25,13 +26,14 @@ def test_jacobi_davidson_4c():
     jd_test = jdr4c.JacobiDavidsonTDA4C(num_eigenvalues=nevals,
                                         rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")
     jd_test.initialize()
-    jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/RS_FILES/full_mat")  # should really do in initialization
+    jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/RS_FILES/KEEPERS/full_mat")
     jd_test.solve()
 
 def test_jacobi_davidson_full_4c():
     nevals = 3
     jd_test = jd_f_4c.JacobiDavidsonFull4C(num_eigenvalues=nevals,
-                                       rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
+                                           rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
+    jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/full_mat")
     jd_test.initialize()
     jd_test.solve()
 
@@ -40,3 +42,15 @@ def test_array_reading():
     evals = mr.read_fortran_array("/home/peter/RS_FILES/4C/lapack_eigvals")
     evals = np.float64(evals)
     np.savetxt("/home/peter/RS_FILES/4C/lapack_eigvals", evals, fmt='%10.5f')
+
+def test_v1_v2_orthogonalization():
+    # newv1 should be [ 0 0 0 1 1 1 ] with angle of 45 degrees
+    v1 = np.array([1, 1, 1, 1, 1, 1])
+    v2 = np.array([1, 1, 1, 0, 0, 0])
+    print("v1 = ", v1)
+    print("v2 = ", v2)
+    newv1, vangle = utils.orthogonalize_v1_against_v2(v1, v2)
+    print("newv1 = ", newv1)
+    print("vangle = ", np.degrees(np.arcsin(vangle)))
+
+

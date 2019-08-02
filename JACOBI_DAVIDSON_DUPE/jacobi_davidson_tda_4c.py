@@ -30,7 +30,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             sys.exit("have not implemented guess for symmetry " + self.P0_tsymm)
 
     def read_1e_eigvals_and_eigvecs(self):
-        evals_1e_all = mr.read_fortran_array("/home/peter/RS_FILES/4C/1el_eigvals")
+        evals_1e_all = mr.read_fortran_array("/home/peter/RS_FILES/4C/KEEPERS_TDA/1el_eigvals")
         np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
 
         num_pos_evals = self.nvirt + self.nocc

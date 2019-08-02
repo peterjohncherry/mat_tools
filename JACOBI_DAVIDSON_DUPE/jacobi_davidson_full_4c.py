@@ -9,6 +9,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def initialize(self):
 
+        print ("self.maxs = ", self.maxs)
         if self.pe_rot:
             self.nvirt = self.ndims - self.nocc
         else:
@@ -18,7 +19,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2*self.nov
         print("self.ndim = ", self.ndim )
 
-        self.read_1e_eigvals_and_eigvecs(seedname = "/home/peter/RS_FILES/4C/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
         self.get_esorted_general()
 
         self.u_vecs = np.zeros((self.ndim, self.nev), dtype=np.complex64)
@@ -106,4 +107,52 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.teta = np.zeros(self.nev, dtype=np.complex64)
 
     def main_loop(self):
-        print("main loop NOT IMPLEMENTED")
+
+        it = 0
+        while it < self.maxs:
+
+            if (it + 2*self.nev) > self.maxs :
+                sys.exit("Exceeded maximum number of iterations. ABORTING!")
+
+            for iev in range(self.nev):
+
+                if self.skip[iev]:
+                    continue
+
+                if it < 2*self.nev :
+                    self.t_vec = self.u_vecs[:,iev]
+                else :
+                    self.get_t_vec()
+
+                for ii in range(it-1):
+                    v_tmp = self.get_pair('x', ii)
+                    self.t_vec, vtangle1 = utils.orthonormalize_v_against_mat_check(self.t_vec, self.vspace)
+                    self.t_vec, vtangle2 = utils.orthonormalize_v1_against_v2(self.t_vec, v_tmp)
+                    print("vtangle1 = ", vtangle1)
+                    print("vtangle2 = ", vtangle2)
+                    if max(vtangle1, vtangle2) > 1e-10:
+                        print("angle between new guess vector and current guess space is small!",
+                              max(vtangle1, vtangle2))
+                        continue
+
+            it += 1
+
+    def get_t_vec(self):
+        print("get_t_vec NOT IMPLEMENTED!!")
+
+    def get_pair(self, pair_type, iev):
+
+        vec_out = np.empty(self.ndim, dtype=np.complex64)
+        n2 = int(self.ndim/2)
+        if pair_type == 'x':
+            vec_out[n2:] = np.conj(self.vspace[:n2, iev])
+            vec_out[:n2] = np.conj(self.vspace[n2:, iev])
+
+        elif pair_type == 'Ax':
+            vec_out[n2:] = -np.conj(self.vspace[:n2, iev])
+            vec_out[:n2] = -np.conj(self.vspace[n2:, iev])
+
+        else:
+            sys.exit("ABORTING!! Unknown pair_type specified in eigenvector construction")
+
+        return vec_out

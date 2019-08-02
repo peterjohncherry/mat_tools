@@ -78,6 +78,17 @@ def orthonormalize_v_against_mat_check(v, mat):
         return v, 1e-10
 
 
+def orthogonalize_v1_against_v2(v1, v2):
+    print("v1 = ", v1)
+    print("v2 = ", v2)
+
+    v1_norm_orig = np.linalg.norm(v1)
+    print(v1_norm_orig)
+    #vnew = v1 - (np.vdot(v1, v2)/np.vdot(v2, v2))*v2
+    vnew = v1 - v2
+    return vnew, np.linalg.norm(vnew)/v1_norm_orig
+
+
 # Normalize v against vectors stored as columns in A
 def orthonormalize_v_against_mat(v, mat):
     ncols = mat.shape[1]
