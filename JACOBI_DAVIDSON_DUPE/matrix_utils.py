@@ -164,3 +164,10 @@ def find_nonzero_elems(seedname, input_array, threshold=1e-10):
     for idx in non_zero_ids:
         outfile.write(str(idx) + " =  " + str(input_array[idx]) + "\n")
     outfile.close()
+
+def normalize(vec):
+    norm=np.linalg.norm(vec)
+    if norm > 1e-10:
+        return vec/norm
+    else:
+        sys.exit("ABORTING!! Norm of vector too small to perform accurate normalization.")
