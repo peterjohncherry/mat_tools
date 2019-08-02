@@ -25,15 +25,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         #self.construct_guess()
 
         for iev in range(self.nev):
-            self.u_vecs[self.eindex[self.nev],iev] = 1.0+ 0.0j
+            self.u_vecs[self.eindex[iev], iev] = 1.0+ 0.0j
 
-        print("self.esorted = ", self.esorted)
-        print("self.eindex = ", self.eindex)
-
-        # check
-        for iev in range(self.nev):
-            np.savetxt("guess_"+str(iev)+".txt", self.u_vecs[:, iev])
-        # end check
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
