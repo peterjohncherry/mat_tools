@@ -98,7 +98,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 if it < 2*self.nev:
                     self.t_vec = self.u_vecs[:, iev]
                 else:
-                    self.get_t_vec()
+                    self.t_vec = self.get_t_vec(iev)
 
                 for ii in range(it-1):
                     v_tmp = self.get_pair('x', self.t_vec)
@@ -125,8 +125,47 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.t_vec = d1*self.t_vec + d2*v_tmp
             it += 1
 
-    def get_t_vec(self):
+    # n =  size of t_vec, u and residual
+    # teta : ritz value
+    #
+    def get_t_vec(self, iev):
+        n = self.ndim
+        t = self.u_vecs[:, iev]
+        u = self.u_vecs[:, iev]
+        r = np.zeros_like(u)
+        teta = self.teta[iev]
+
+        v1 = np.zeros_like(u)
+        v2 = np.zeros_like(u)
+
+        #Minv = np.zeros_like()
+
+        #call self__preconditioning(n, teta, v1, r)   ! v1 = M ^ (-1) * r
+        #call self__preconditioning(n, teta, v2, u)   ! v2 = M ^ (-1) * u
+
+        e = np.dot(r, v1)
+        c = np.dot(u, v2)
+        print( "uMinvr = ", e)
+        print( "uMinvu = ", c)
+
+        if (abs(np.real(c)) < 1.0e-8):
+            e = 0.0 + 0.0j
+        else:
+            e = e / np.real(c)
+
+        #call self__sum(n, t, e, v2, -dcmplx(1.0,0.0), v1)
+
+        #call memrm('self__get_t', 'v1', v1) deallocate(v1)
+        #call memrm('self__get_t', 'v2', v2); deallocate(v2)
+
+        # in case of  time - reversal symmetry trial vector should be t - symmetric
+        #select case(trim(self__P0_tsymm))
+        #case('symmetric');
+        #self__make_mo_ts(t, n)
+        #end select
+
         print("get_t_vec NOT IMPLEMENTED!!")
+        return t
 
     def get_pair(self, pair_type, vec_in):
 

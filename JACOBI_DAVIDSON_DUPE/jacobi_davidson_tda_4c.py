@@ -188,9 +188,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             print("self.dnorm = ", self.dnorm)
             print("skip = ", skip)
 
-
-                #tmp_rvec = tmp_uhat - self.teta[iteta]*tmp_uvec
-                #self.dnorm[iteta] = la.norm(tmp_rvec)
             # Checking
             utils.zero_small_parts(self.u_hats)
             utils.zero_small_parts(self.u_vecs)
