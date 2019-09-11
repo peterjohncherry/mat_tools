@@ -79,13 +79,12 @@ def orthonormalize_v_against_mat_check(v, mat):
 
 
 def orthogonalize_v1_against_v2(v1, v2):
-    print("v1 = ", v1)
-    print("v2 = ", v2)
-
+    print("v1 = ", v1, " v2 = ", v2)
     v1_norm_orig = np.linalg.norm(v1)
     print(v1_norm_orig)
     #vnew = v1 - (np.vdot(v1, v2)/np.vdot(v2, v2))*v2
-    vnew = v1 - v2
+    vnew = (v1 - v2)
+    vnew = vnew//np.linalg.norm(vnew)
     return vnew, np.linalg.norm(vnew)/v1_norm_orig
 
 
