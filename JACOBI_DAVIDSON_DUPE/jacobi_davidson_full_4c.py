@@ -7,6 +7,77 @@ import matrix_utils as utils
 
 class JacobiDavidsonFull4C(eps_solvers.Solver):
 
+
+    def main_loop(self):
+        self.maxs = 13
+        it = 0
+        while it < self.maxs:
+
+            if (it + 2*self.nev) > self.maxs :
+                sys.exit("Exceeded maximum number of iterations. ABORTING!")
+
+            for iev in range(self.nev):
+                if self.skip[iev]:
+                    continue
+
+                if it < 2*self.nev:
+                    self.t_vec = self.u_vecs[:, iev]
+
+                # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
+                t_vec_pair = self.get_pair('x', self.t_vec)
+
+    def main_loop(self):
+        # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
+        # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
+
+        maxs2 = int(self.maxs/2)
+        it = 0
+        print("maxs2 = ", maxs2)
+        print("nev = ", self.nev)
+        while it < self.maxs:
+            print("it = ", it)
+
+            if it > self.maxs :
+                sys.exit("Exceeded maximum number of iterations. ABORTING!")
+
+            for iev in range(self.nev):
+               # if self.skip[iev]:
+               #     continue
+
+                if it < 2*self.nev:
+                    self.t_vec = self.u_vecs[:, iev]
+
+                # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
+                t_vec_pair = self.get_pair('x', self.t_vec)
+                print("t_vec_pair = ", t_vec_pair, "max(t_vec_pair) = ", max(t_vec_pair))
+
+                # Get coefficients for symmetrization
+                d1, d2 = self.orthonormalize_pair(self.t_vec)
+
+                # Build symmetrized t_vec using coeffs
+                for ii in range(it+1):
+                    self.vspace[:, it] = d1*self.t_vec + d2*t_vec_pair
+                    self.wspace[:, it] = self.sigma_constructor(self.vspace[:, it])
+                    self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
+                    self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
+
+                # Build subspace matrix : v*Av = v*w
+                submat = np.zeros((it+1,it+1), np.complex64)
+                for ii in range(it):
+                    for jj in range(it):
+                        submat[ii,jj] = np.vdot(self.vspace[:,ii], self.wspace[:,jj])
+
+                print("submat = \n", np.real(submat))
+
+            it += 1
+            # Now build left eigenvectors
+            self.t_vec = self.vspace[:,it-1]
+            self.t_vec = self.get_left_evec(self.t_vec)
+
+    def  get_left_evec(self, vec):
+        vec[int(len(vec)/2):] = vec[int(len(vec)/2):]
+        return vec
+
     def initialize(self):
 
         print ("self.maxs = ", self.maxs)
@@ -68,58 +139,19 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         # temporary variables, not really needed here
         self.t_vec = np.zeros(self.ndim, dtype=np.complex64)
-        self.w_tmp = np.zeros_like(self.t_vec)
-        self.v_tmp = np.zeros_like(self.t_vec)
 
         # Guess vectors, residuals, etc.,
-        self.vspace = np.zeros((self.ndim, self.maxs), dtype=np.complex64)
+        self.vspace = np.zeros((self.ndim, 2*self.maxs), dtype=np.complex64)
         self.wspace = np.zeros_like(self.vspace)
 
-        self.r_vecs = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
         self.u_hats = np.zeros_like(self.r_vecs)
 
         # Subspace Hamiltonian
         self.submat = np.empty((2*self.maxs, 2*self.maxs), dtype=np.complex64)
         self.teta = np.zeros(self.nev, dtype=np.complex64)
 
-    def main_loop(self):
-        self.maxs = 13
-        it = 0
-        while it < self.maxs:
-
-            if (it + 2*self.nev) > self.maxs :
-                sys.exit("Exceeded maximum number of iterations. ABORTING!")
-
-            for iev in range(self.nev):
-                if self.skip[iev]:
-                    continue
-
-                if it < 2*self.nev:
-                    self.t_vec = self.u_vecs[:, iev]
-
-                t_vec_pair = self.get_pair('x', self.t_vec)
-                print("t_vec_pair = ", t_vec_pair, "max(t_vec_pair) = ", max(t_vec_pair))
-
-                d1, d2 = self.orthonormalize_pair(self.t_vec)
-                print("d1   , d2 = ", d1, d2)
-
-            it += 1
-
-    def get_pair(self, pair_type, vec_in):
-        vec_out = np.empty(self.ndim, dtype=np.complex64)
-        n2 = int(self.ndim/2)
-        print ("n2 = ", n2)
-        if pair_type == 'x':
-            vec_out[n2:] = np.conj(vec_in[:n2])
-            vec_out[:n2] = np.conj(vec_in[n2:])
-        elif pair_type == 'Ax':
-            vec_out[n2:] = -vec_in[:n2].conj()
-            vec_out[:n2] = -vec_in[n2:].conj()
-        else:
-            sys.exit("ABORTING!! Unknown pair_type specified in eigenvector construction")
-
-        return vec_out
-
+    # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
         guess = np.zeros(self.nov, dtype=np.complex64)
 
@@ -148,10 +180,27 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             else:
                 guess[i1] = 0.0 + 1.0j/ np.sqrt(2.0)
                 guess[i2] = 0.0 - 1.0j/ np.sqrt(2.0)
-        else :
+        else:
             print("Symmetry type ", symmetry_type, " not implemented")
 
         return guess
+
+    # Construct pair according to symmetry relations
+    # x :  [X,Y] --> [ Y*, X* ]
+    # Ax : [X,Y] --> [ -Y*, -X* ]
+    def get_pair(self, pair_type, vec_in):
+        vec_out = np.empty(self.ndim, dtype=np.complex64)
+        n2 = int(self.ndim/2)
+        if pair_type == 'x':
+            vec_out[n2:] = np.conj(vec_in[:n2])
+            vec_out[:n2] = np.conj(vec_in[n2:])
+        elif pair_type == 'Ax':
+            vec_out[n2:] = -vec_in[:n2].conj()
+            vec_out[:n2] = -vec_in[n2:].conj()
+        else:
+            sys.exit("ABORTING!! Unknown pair_type specified in eigenvector construction")
+
+        return vec_out
 
     # This restructures the input vector so that it's "pair" as constructed using get_pair
     # will also be orthogonal to the vector space
@@ -213,3 +262,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v1[idx] = 0.0 + 0.0j
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
+
+    def sigma_constructor(self, vec):
+        return np.matmul(self.mat_orig, vec)
