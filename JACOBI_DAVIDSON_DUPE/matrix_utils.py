@@ -84,7 +84,7 @@ def orthogonalize_v1_against_v2(v1, v2):
     print(v1_norm_orig)
     #vnew = v1 - (np.vdot(v1, v2)/np.vdot(v2, v2))*v2
     vnew = (v1 - v2)
-    vnew = vnew//np.linalg.norm(vnew)
+    vnew = vnew/np.linalg.norm(vnew)
     return vnew, np.linalg.norm(vnew)/v1_norm_orig
 
 

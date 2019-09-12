@@ -54,27 +54,29 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 # Get coefficients for symmetrization
                 d1, d2 = self.orthonormalize_pair(self.t_vec)
 
-                # Build symmetrized t_vec using coeffs
-                for ii in range(it+1):
-                    self.vspace[:, it] = d1*self.t_vec + d2*t_vec_pair
-                    self.wspace[:, it] = self.sigma_constructor(self.vspace[:, it])
-                    self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
-                    self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
+                # Build symmetrized t_vec using coeffs, and extend vspace and wspace
+                self.vspace[:, it] = d1*self.t_vec + d2*t_vec_pair
+                self.wspace[:, it] = self.sigma_constructor(self.vspace[:, it])
+                self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
+                self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
+
+                it += 1
+                # Now build left eigenvectors
+                self.t_vec = self.vspace[:, it-1]
+                self.t_vec = self.get_left_evec(self.t_vec)
+                self.t_vec, t_angle = utils.orthogonalize_v1_against_v2(self.t_vec, self.vspace[:, it-1])
+                self.vspace[:, it] = self.t_vec
+                self.wspace[:, it] = self.sigma_constructor(self.t_vec)
 
                 # Build subspace matrix : v*Av = v*w
-                submat = np.zeros((it+1,it+1), np.complex64)
+                submat = np.zeros((it, it), np.complex64)
                 for ii in range(it):
                     for jj in range(it):
-                        submat[ii,jj] = np.vdot(self.vspace[:,ii], self.wspace[:,jj])
+                        submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
 
                 print("submat = \n", np.real(submat))
 
-            it += 1
-            # Now build left eigenvectors
-            self.t_vec = self.vspace[:,it-1]
-            self.t_vec = self.get_left_evec(self.t_vec)
-
-    def  get_left_evec(self, vec):
+    def get_left_evec(self, vec):
         vec[int(len(vec)/2):] = vec[int(len(vec)/2):]
         return vec
 
