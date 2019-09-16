@@ -130,13 +130,13 @@ def remove_imag_part(complex_array):
 
 
 # crap, should be done with forvec
-def zero_small_parts(complex_array):
+def zero_small_parts(complex_array, thresh=1e-10):
     if len(complex_array.shape) == 2:
         for ii in range(complex_array.shape[0]):
             for jj in range(complex_array.shape[1]):
-                if abs(np.imag(complex_array[ii, jj])) < 1e-10:
+                if abs(np.imag(complex_array[ii, jj])) < thresh:
                     complex_array[ii, jj] = complex_array[ii, jj].real
-                if abs(np.real(complex_array[ii, jj])) < 1e-10:
+                if abs(np.real(complex_array[ii, jj])) < thresh:
                     complex_array[ii, jj] = complex_array[ii, jj].imag
 
     elif len(complex_array.shape) == 1:
@@ -171,14 +171,14 @@ def normalize(vec):
     else:
         sys.exit("ABORTING!! Norm of vector too small to perform accurate normalization.")
 
-def print_nonzero_numpy_elems(my_arr, arr_name = "??"):
+def print_nonzero_numpy_elems(my_arr, arr_name = "??", thresh = 1e-6):
     if len(my_arr.shape) == 2 :
         for ii in range(my_arr.shape[0]):
             for jj in range(my_arr.shape[1]):
-                if abs(my_arr[ii, jj]) > 1e-10:
+                if abs(my_arr[ii, jj]) > thresh:
                     print(arr_name+"[" + str(ii) + "," + str(jj) + "] = ", my_arr[ii, jj])
 
     elif len(my_arr.shape) == 1:
         for ii in range(my_arr.shape[0]):
-                if abs(my_arr[ii]) > 1e-10:
+                if abs(my_arr[ii]) > thresh:
                     print(arr_name +"[" + str(ii) + "] = ", my_arr[ii])
