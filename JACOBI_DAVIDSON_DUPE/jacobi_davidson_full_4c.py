@@ -20,7 +20,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
 
 
-        while it < 4*self.maxs:
+        while it < 3:
             print("it = ", it)
 
             if it > self.maxs :
@@ -67,10 +67,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 for jj in range(it):
                     submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
 
-#            print("submat = \n", np.real(submat))
+            np.savetxt("submat", submat)
+
+#           print("submat = \n", np.real(submat))
             theta, hevecs = np.linalg.eig(submat)
             print("theta = ", theta)
-#            print("hevecs \n = ", hevecs)
+#           print("hevecs \n = ", hevecs)
 
             self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
             u_hat = np.zeros(self.ndim, np.complex64)
@@ -105,7 +107,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
-            self.u_vecs[:self.nov, iev] = self.construct_guess(iev, symmetry_type)
+            self.u_vecs[:self.nov, iev] = self.construct_guess(iev, 'general')
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
