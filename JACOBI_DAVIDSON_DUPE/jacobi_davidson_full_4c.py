@@ -45,6 +45,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 # Get coefficients for symmetrization
                 d1, d2 = self.orthonormalize_pair(t_vec)
 
+
                 # Build symmetrized t_vec using coeffs, and extend vspace and wspace
                 self.vspace[:, it] = d1*t_vec + d2*t_vec_pair
                 self.wspace[:, it] = self.sigma_constructor(self.vspace[:, it])
@@ -67,6 +68,14 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace[:, it] = self.sigma_constructor(t_vec)
                 self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
                 self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
+                utils.zero_small_parts(self.vspace)
+                utils.zero_small_parts(self.wspace)
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt",
+                           self.wspace[:, it + maxs2])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt",
+                           self.vspace[:, it + maxs2])
 
             # Build subspace matrix : v*Av = v*w
             submat = np.zeros((2*it, 2*it), np.complex64)
@@ -75,10 +84,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
 
             utils.zero_small_parts(submat)
-            utils.zero_small_parts(self.vspace)
-            utils.zero_small_parts(self.wspace)
-            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace"+str(it)+".txt", self.wspace)
-            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace"+str(it)+".txt", self.vspace)
             np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
 
 #           print("submat = \n", np.real(submat))
@@ -165,7 +170,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.dnorm = np.zeros(self.nev, dtype=np.float32)
 
         # Guess vectors, residuals, etc.,
-        self.vspace = np.zeros((self.ndim, 4*self.maxs), dtype=np.complex64)
+        self.vspace = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
         self.wspace = np.zeros_like(self.vspace)
         self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
 
