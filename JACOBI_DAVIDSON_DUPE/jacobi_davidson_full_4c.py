@@ -5,6 +5,7 @@ import eps_solvers
 import mat_reader as mr
 import matrix_utils as utils
 
+
 class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def main_loop(self):
@@ -14,6 +15,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         it = 0
         print("maxs2 = ", maxs2)
         print("nev = ", self.nev)
+        evals, evecs = np.linalg.eig(self.mat_orig)
+        np.set_printoptions(threshold=sys.maxsize)
+        print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
+
+
         while it < 4*self.maxs:
             print("it = ", it)
 
@@ -24,14 +30,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                # if self.skip[iev]:
                #     continue
 
-                if it < 2*self.nev:
+                utils.print_nonzero_numpy_elems(self.u_vecs, arr_name = "u_vecs")
+                if it < self.nev:
                     t_vec = self.u_vecs[:, iev]
                 else :
-                    t_vec =
+                    t_vec = self.get_new_tvec(iev)
 
                 # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
                 t_vec_pair = self.get_pair('x', t_vec)
-                print("t_vec_pair = ", t_vec_pair, "max(t_vec_pair) = ", max(t_vec_pair))
+
+                utils.print_nonzero_numpy_elems(t_vec, arr_name="t_vec")
+                utils.print_nonzero_numpy_elems(t_vec_pair, arr_name="t_vec_pair")
 
                 # Get coefficients for symmetrization
                 d1, d2 = self.orthonormalize_pair(t_vec)
@@ -52,17 +61,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
                 self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
 
-                # Build subspace matrix : v*Av = v*w
-                submat = np.zeros((it, it), np.complex64)
-                for ii in range(it):
-                    for jj in range(it):
-                        submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
+            # Build subspace matrix : v*Av = v*w
+            submat = np.zeros((it, it), np.complex64)
+            for ii in range(it):
+                for jj in range(it):
+                    submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
 
-                print("submat = \n", np.real(submat))
-
+#            print("submat = \n", np.real(submat))
             theta, hevecs = np.linalg.eig(submat)
             print("theta = ", theta)
-            print("hevecs \n = ", hevecs)
+#            print("hevecs \n = ", hevecs)
 
             self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
             u_hat = np.zeros(self.ndim, np.complex64)
@@ -227,6 +235,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         v2 = np.ndarray(self.ndim, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
         idx = 0
+        # First half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
                 ediff = (self.evalai(ii, jj) - teta_iev)
@@ -239,8 +248,26 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v1[idx] = 0.0 + 0.0j
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
+        # Second half of vector
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                ediff = -(self.evalai(ii, jj) + teta_iev)
+                if abs(ediff) > 1e-8:
+                    ediff = 1 / ediff
+                    v1[idx] = self.r_vecs[idx, iev] * ediff
+                    v2[idx] = self.u_vecs[idx, iev] * ediff
+                else:
+                    print("Warning, (E_{a}-E_{i})<1e-8")
+                    v1[idx] = 0.0 + 0.0j
+                    v2[idx] = 0.0 + 0.0j
+                idx += 1
+        e = np.vdot(self.u_vecs[:, iev], v1)
+        c = np.vdot(self.u_vecs[:, iev], v2)
+        print("uMinvr = ", e )
+        print("uMinvu = ", c )
+        e = e/np.real(c)
 
-
+        return v2 - e*v1
 
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)

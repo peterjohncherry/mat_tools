@@ -79,7 +79,7 @@ def orthonormalize_v_against_mat_check(v, mat):
 
 
 def orthogonalize_v1_against_v2(v1, v2):
-    print("v1 = ", v1, " v2 = ", v2)
+    #print("v1 = ", v1, "\n v2 = ", v2)
     v1_norm_orig = np.linalg.norm(v1)
     print(v1_norm_orig)
     #vnew = v1 - (np.vdot(v1, v2)/np.vdot(v2, v2))*v2
@@ -170,3 +170,15 @@ def normalize(vec):
         return vec/norm
     else:
         sys.exit("ABORTING!! Norm of vector too small to perform accurate normalization.")
+
+def print_nonzero_numpy_elems(my_arr, arr_name = "??"):
+    if len(my_arr.shape) == 2 :
+        for ii in range(my_arr.shape[0]):
+            for jj in range(my_arr.shape[1]):
+                if abs(my_arr[ii, jj]) > 1e-10:
+                    print(arr_name+"[" + str(ii) + "," + str(jj) + "] = ", my_arr[ii, jj])
+
+    elif len(my_arr.shape) == 1:
+        for ii in range(my_arr.shape[0]):
+                if abs(my_arr[ii]) > 1e-10:
+                    print(arr_name +"[" + str(ii) + "] = ", my_arr[ii])
