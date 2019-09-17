@@ -79,15 +79,15 @@ def orthonormalize_v_against_mat_check(v, mat):
 
 
 # Returns normed vector, second return value is false if norm of vector was too small for accurate
-def normalize(vec, threshold = 1e-10):
-    norm=np.linalg.norm(vec)
+def normalize(vec, threshold=1e-10):
+    norm = np.linalg.norm(vec)
     if norm > threshold:
         return vec/norm, True
     else:
         return vec, False
 
 
-def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh= 1e-8, norm_thresh = 1e-12):
+def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh=1e-8, norm_thresh=1e-12):
     v1_norm_orig = np.linalg.norm(v1)
 
     v1new, check1 = normalize(v1, norm_thresh)
@@ -105,6 +105,7 @@ def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh= 1e-8, norm_thr
             exit("normalization of v2 failed")
     else:
         exit("normalization of v1 failed")
+
 
 # Normalize v against vectors stored as columns in A
 def orthonormalize_v_against_mat(v, mat):
@@ -183,17 +184,17 @@ def find_nonzero_elems(seedname, input_array, threshold=1e-10):
     outfile.close()
 
 
-def print_nonzero_numpy_elems(my_arr, arr_name = "??", thresh = 1e-6):
-    if len(my_arr.shape) == 2 :
+def print_nonzero_numpy_elems(my_arr, arr_name="??", thresh=1e-6):
+    if len(my_arr.shape) == 2:
         for ii in range(my_arr.shape[0]):
             for jj in range(my_arr.shape[1]):
                 if abs(my_arr[ii, jj]) > thresh:
-                    print(arr_name+"[" + str(ii) + "," + str(jj) + "] = ", my_arr[ii, jj])
+                    print(arr_name + "[" + str(ii) + "," + str(jj) + "] = ", my_arr[ii, jj])
 
     elif len(my_arr.shape) == 1:
         for ii in range(my_arr.shape[0]):
-                if abs(my_arr[ii]) > thresh:
-                    print(arr_name +"[" + str(ii) + "] = ", my_arr[ii])
+            if abs(my_arr[ii]) > thresh:
+                print(arr_name + "[" + str(ii) + "] = ", my_arr[ii])
 
 
 def check_for_nans(arr_list, name_list, exit_on_nan=True):
@@ -204,6 +205,6 @@ def check_for_nans(arr_list, name_list, exit_on_nan=True):
                 exit()
 
 
-def save_arrs_to_file( arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/"):
+def save_arrs_to_file(arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/"):
     for ii in range(len(arr_list)):
         np.savetxt(parent_folder+arr_names[ii] + ".txt", arr_list[ii])

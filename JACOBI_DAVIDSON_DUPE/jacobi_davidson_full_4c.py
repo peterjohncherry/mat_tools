@@ -387,9 +387,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         return np.matmul(self.mat_orig, vec)
 
     def zero_check_and_save_rh(self, it):
-        print("self.vspace_r.shape = ", self.vspace_r.shape)
-        print("self.vspace_r[:," + str(it) + "] = ", self.vspace_r[:, it])
-
         utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
                              ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
         utils.zero_small_parts(self.vspace_r)
@@ -408,5 +405,5 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         utils.zero_small_parts(self.vspace_lp)
         utils.zero_small_parts(self.wspace_lp)
         utils.save_arrs_to_file([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
-                                ["self.vspace_l" + str(it), "self.vspace_lp" + str(it),
-                                 "self.wspace_l" + str(it), "self.wspace_lp" + str(it)])
+                                {"self.vspace_l" + str(it), "self.vspace_lp" + str(it), "self.wspace_l" + str(it),
+                                 "self.wspace_lp" + str(it)})
