@@ -31,8 +31,6 @@ class Solver:
 
         # Guess space arrays
         self.u_vecs = None
-        self.vspace = None
-        self.wspace = None
         self.r_vecs = None
         self.u_hats = None
 

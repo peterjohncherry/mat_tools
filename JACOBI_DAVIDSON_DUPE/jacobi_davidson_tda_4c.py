@@ -9,6 +9,14 @@ import matrix_utils as utils
 class JacobiDavidsonTDA4C(eps_solvers.Solver):
     np.set_printoptions(precision=4)
 
+    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace= 6,
+                 solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
+        super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
+                         pe_rot)
+        # Guess space arrays
+        self.vspace = None
+        self.wspace = None
+
     def initialize(self):
 
         if self.pe_rot:

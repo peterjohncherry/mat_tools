@@ -8,6 +8,52 @@ import matrix_utils as utils
 
 class JacobiDavidsonFull4C(eps_solvers.Solver):
 
+    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace= 6,
+                 solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
+        super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
+                         pe_rot)
+        # Guess space arrays - original right-handed guesses
+        self.vspace_r = None
+        self.wspace_r = None
+
+        # Guess space arrays - pairs of right-handed guesses#
+        self.vspace_rp = None
+        self.wspace_rp = None
+
+        # Guess space arrays - original of left-handed guesses#
+        self.vspace_l = None
+        self.wspace_l = None
+
+        # Guess space arrays - pairs of left-handed guesses
+        self.vspace_lp = None
+        self.wspace_lp = None
+
+    def solve(self):
+        self.initialize_first_iteration()
+        self.main_loop()
+
+
+    def initialize_first_iteration(self):
+        # for convergence checking
+        self.skip = np.full(self.nev, False)
+        self.dnorm = np.zeros(self.nev, dtype=np.float32)
+
+        # Guess vectors, residuals, etc.,
+        self.vspace_r = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.wspace_r = np.zeros_like(self.vspace_r)
+        self.vspace_l = np.zeros_like(self.vspace_r)
+        self.wspace_l = np.zeros_like(self.vspace_r)
+
+        self.vspace_rp = np.zeros_like(self.vspace_r)
+        self.wspace_rp = np.zeros_like(self.vspace_r)
+        self.vspace_lp = np.zeros_like(self.vspace_r)
+        self.wspace_lp = np.zeros_like(self.vspace_r)
+
+        self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
+
+        # Subspace Hamiltonian
+        self.teta = np.zeros(self.nev, dtype=np.complex64)
+
     def main_loop(self):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
@@ -18,7 +64,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         evals, evecs = np.linalg.eig(self.mat_orig)
         np.set_printoptions(threshold=sys.maxsize)
         print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
-
 
         while it < 3:
             print("it = ", it)
@@ -45,43 +90,39 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 # Get coefficients for symmetrization
                 d1, d2 = self.orthonormalize_pair(t_vec)
 
-
                 # Build symmetrized t_vec using coeffs, and extend vspace and wspace
-                self.vspace[:, it] = d1*t_vec + d2*t_vec_pair
-                self.wspace[:, it] = self.sigma_constructor(self.vspace[:, it])
-                self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
-                self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
-                utils.zero_small_parts(self.vspace)
-                utils.zero_small_parts(self.wspace)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace[:, it + maxs2])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace[:, it + maxs2])
+                self.vspace_r[:, it] = d1 * t_vec + d2 * t_vec_pair
+                self.wspace_r[:, it] = self.sigma_constructor(self.vspace_r[:, it])
+                self.vspace_rp[:, it] = self.get_pair('x', self.vspace_r[:, it])
+                self.wspace_rp[:, it] = self.get_pair('Ax', self.wspace_r[:, it])
+                utils.zero_small_parts(self.vspace_r)
+                utils.zero_small_parts(self.wspace_r)
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_r[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_r[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_rp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_rp[:, it])
 
+                # Now build left eigenvectors
+                t_vec = self.get_left_evec(self.vspace_r[:, it])
+                t_vec, t_angle = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
+                self.vspace_l[:, it] = t_vec
+                self.wspace_l[:, it] = self.sigma_constructor(t_vec)
+                self.vspace_lp[:, it] = self.get_pair('x', self.vspace_l[:, it])
+                self.wspace_lp[:, it] = self.get_pair('Ax', self.wspace_l[:, it])
+                utils.zero_small_parts(self.vspace_l)
+                utils.zero_small_parts(self.wspace_l)
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_l[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_l[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_lp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_lp[:, it])
 
                 it += 1
-                # Now build left eigenvectors
-                t_vec = self.vspace[:, it-1]
-                t_vec = self.get_left_evec(t_vec)
-                t_vec, t_angle = utils.orthogonalize_v1_against_v2(t_vec, self.vspace[:, it-1])
-                self.vspace[:, it] = t_vec
-                self.wspace[:, it] = self.sigma_constructor(t_vec)
-                self.vspace[:, it + maxs2] = self.get_pair('x', self.vspace[:, it])
-                self.wspace[:, it + maxs2] = self.get_pair('Ax', self.wspace[:, it])
-                utils.zero_small_parts(self.vspace)
-                utils.zero_small_parts(self.wspace)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt",
-                           self.wspace[:, it + maxs2])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt",
-                           self.vspace[:, it + maxs2])
 
             # Build subspace matrix : v*Av = v*w
-            submat = np.zeros((2*it, 2*it), np.complex64)
-            for ii in range(2*it):
-                for jj in range(2*it):
-                    submat[ii, jj] = np.vdot(self.vspace[:, ii], self.wspace[:, jj])
+            submat = self.build_subspace_matrix()
+            #for ii in range(it):
+            #    for jj in range(it):
+            #        submat[ii, jj] = np.vdot(self.vspace_l[:, ii], self.wspace_l[:, jj])
 
             utils.zero_small_parts(submat)
             np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
@@ -97,7 +138,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             dnorm = np.zeros(self.nev, np.complex64)
             for iev in range(iev):
                 for ii in range(it):
-                    self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[iev, ii]*self.vspace[:, ii]
+                    self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[iev, ii]* self.vspace_l[:, ii]
                     u_hat = u_hat + hevecs[iev, ii] * self.wspace[:, ii]
                 self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev]*theta[iev]
                 dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
@@ -106,6 +147,25 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             #utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
 
             print("dnorm = ", dnorm)
+
+    # Ugly, but will slowly swap out parts for more sensible approach
+    def build_subspace_matrix(self):
+
+        sb_dim = self.vspace_r.shape[1]+self.vspace_rp.shape[1]+self.vspace_l.shape[1]+self.vspace_lp.shape[1]
+        submat = np.ndarray((sb_dim, sb_dim), np.complex64)
+        vi = 0
+        for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
+            for ii in range(vs.shape[1]):
+                wj = 0
+                for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
+                    for jj in range(ws.shape[1]):
+                        submat[vi+ii, wj+jj] = np.vdot(vs[:, ii], ws[:, jj])
+                        print("submat["+str(vi+ii)+","+str(wj+jj)+"] = ", submat[vi+ii, wj+jj])
+                    wj = wj + ws.shape[1]
+            vi = vi + vs.shape[1]
+        exit()
+
+        return submat
 
     def get_left_evec(self, vec):
         vec[int(len(vec)/2):] = vec[int(len(vec)/2):]
@@ -159,23 +219,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.evals_1e = evals_1e_all[num_pos_evals:]
 
         np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
-
-    def solve(self):
-        self.initialize_first_iteration()
-        self.main_loop()
-
-    def initialize_first_iteration(self):
-        # for convergence checking
-        self.skip = np.full(self.nev, False)
-        self.dnorm = np.zeros(self.nev, dtype=np.float32)
-
-        # Guess vectors, residuals, etc.,
-        self.vspace = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
-        self.wspace = np.zeros_like(self.vspace)
-        self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
-
-        # Subspace Hamiltonian
-        self.teta = np.zeros(self.nev, dtype=np.complex64)
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
@@ -294,4 +337,4 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def sigma_constructor(self, vec):
         #np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/mat_orig.txt", self.mat_orig)
-        return np.matmul(self.mat_orig,vec)
+        return np.matmul(self.mat_orig, vec)
