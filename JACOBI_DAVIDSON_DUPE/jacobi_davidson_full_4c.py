@@ -80,68 +80,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 else :
                     t_vec = self.get_new_tvec(iev)
 
-                # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
-                t_vec_pair = self.get_pair('x', t_vec)
-
-                utils.print_nonzero_numpy_elems(t_vec, arr_name="t_vec")
-                utils.print_nonzero_numpy_elems(t_vec_pair, arr_name="t_vec_pair")
-
-                # Get coefficients for symmetrization
-                d1, d2 = self.orthonormalize_pair(t_vec)
-
-                # Build symmetrized t_vec using coeffs, and extend vspace and wspace
-                if self.vspace_r is None:
-                    self.vspace_r = np.ndarray((self.ndim, 1), np.complex64)
-                    self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
-
-                    self.wspace_r = np.ndarray((self.ndim, 1), np.complex64)
-                    self.wspace_r[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
-
-                    self.vspace_rp = np.ndarray((self.ndim, 1), np.complex64)
-                    self.vspace_rp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
-
-                    self.wspace_rp = np.ndarray((self.ndim, 1), np.complex64)
-                    self.wspace_rp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
-                else:
-                    self.vspace_r = np.c_[self.vspace_r, (d1 * t_vec + d2 * t_vec_pair)]
-                    self.vspace_rp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
-                    self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
-                    self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
-
-                # just to test, remove later
-                self.zero_check_and_save_rh(it)
-
-                # Now build left eigenvectors
-                t_vec = self.get_left_evec(self.vspace_r[:, it])
-                utils.check_for_nans([t_vec], ["t_vec_pre_orth"])
-                t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
-                utils.check_for_nans([t_vec], ["t_vec_post_orth"])
-
-                # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
-                # which is orthogonal to the space spanned by the right eigenvectors
-                if good_t_vec:
-                    if self.vspace_l is None:
-                        self.vspace_l = np.ndarray((self.ndim, 1), np.complex64)
-                        self.vspace_l[:, 0] = t_vec
-
-                        self.wspace_l = np.ndarray((self.ndim, 1), np.complex64)
-                        self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
-
-                        self.vspace_lp = np.ndarray((self.ndim, 1), np.complex64)
-                        self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
-
-                        self.wspace_lp = np.ndarray((self.ndim, 1), np.complex64)
-                        self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
-                    else:
-                        self.vspace_l = np.c_[self.vspace_l, t_vec]
-                        self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, it])]
-                        self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, it])]
-                        self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, it])]
-
-                    # just to test, remove later
-                    self.zero_check_and_save_lh(it)
-
-
+                self.extend_right_handed_spaces(t_vec, it)
+                self.extend_left_handed_spaces(it)
                 it += 1
 
             # Build subspace matrix : v*Av = v*w
@@ -165,10 +105,73 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev]*theta[iev]
                 dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
             utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs")
+
             # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat")
             # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
 
             print("dnorm = ", dnorm)
+
+    def extend_right_handed_spaces(self, t_vec, it):
+        # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
+        t_vec_pair = self.get_pair('x', t_vec)
+        utils.print_nonzero_numpy_elems(t_vec, arr_name="t_vec")
+        utils.print_nonzero_numpy_elems(t_vec_pair, arr_name="t_vec_pair")
+
+        # Get coefficients for symmetrization
+        d1, d2 = self.orthonormalize_pair(t_vec)
+
+        # Build symmetrized t_vec using coeffs, and extend vspace and wspace
+        if self.vspace_r is None:
+            self.vspace_r = np.ndarray((self.ndim, 1), np.complex64)
+            self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
+
+            self.wspace_r = np.ndarray((self.ndim, 1), np.complex64)
+            self.wspace_r[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+
+            self.vspace_rp = np.ndarray((self.ndim, 1), np.complex64)
+            self.vspace_rp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+
+            self.wspace_rp = np.ndarray((self.ndim, 1), np.complex64)
+            self.wspace_rp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+        else:
+            self.vspace_r = np.c_[self.vspace_r, (d1 * t_vec + d2 * t_vec_pair)]
+            self.vspace_rp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
+            self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
+            self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
+
+        # just to test, remove later
+        self.zero_check_and_save_rh(it)
+
+    def extend_left_handed_spaces(self, it):
+        # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
+        # which is orthogonal to the space spanned by the right eigenvectors
+        # Now build left eigenvectors
+        t_vec = self.get_left_evec(self.vspace_r[:, it])
+        utils.check_for_nans([t_vec], ["t_vec_pre_orth"])
+        t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
+        utils.check_for_nans([t_vec], ["t_vec_post_orth"])
+
+        if good_t_vec:
+            if self.vspace_l is None:
+                self.vspace_l = np.ndarray((self.ndim, 1), np.complex64)
+                self.vspace_l[:, 0] = t_vec
+
+                self.wspace_l = np.ndarray((self.ndim, 1), np.complex64)
+                self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+
+                self.vspace_lp = np.ndarray((self.ndim, 1), np.complex64)
+                self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+
+                self.wspace_lp = np.ndarray((self.ndim, 1), np.complex64)
+                self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+            else:
+                self.vspace_l = np.c_[self.vspace_l, t_vec]
+                self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, it])]
+                self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, it])]
+                self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, it])]
+
+            # just to test, remove later
+            self.zero_check_and_save_lh(it)
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
@@ -191,7 +194,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                                 print("submat["+str(vi+ii)+","+str(wj+jj)+"] = ", submat[vi+ii, wj+jj])
                             wj = wj + ws.shape[1]
                 vi = vi + vs.shape[1]
-        exit()
 
         return submat
 
