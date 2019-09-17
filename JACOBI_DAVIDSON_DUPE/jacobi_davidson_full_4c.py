@@ -41,13 +41,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Guess vectors, residuals, etc.,
         self.vspace_r = None
         self.wspace_r = None
-        self.vspace_l = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.wspace_l = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.vspace_l = None
+        self.wspace_l = None
 
         self.vspace_rp = None
         self.wspace_rp = None
-        self.vspace_lp = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.wspace_lp = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.vspace_lp = None
+        self.wspace_lp = None
 
         self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
 
@@ -67,7 +67,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         while it < 3:
             print("it = ", it)
-
             if it > self.maxs :
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
@@ -125,28 +124,44 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 # Now build left eigenvectors
                 t_vec = self.get_left_evec(self.vspace_r[:, it])
                 utils.check_for_nans([t_vec], ["t_vec_pre_orth"])
-                t_vec, t_angle = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
+                t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
                 utils.check_for_nans([t_vec], ["t_vec_post_orth"])
-                self.vspace_l[:, it] = t_vec
-                self.wspace_l[:, it] = self.sigma_constructor(t_vec)
-                self.vspace_lp[:, it] = self.get_pair('x', self.vspace_l[:, it])
-                self.wspace_lp[:, it] = self.get_pair('Ax', self.wspace_l[:, it])
-                utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
-                                     ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
-                utils.zero_small_parts(self.vspace_l)
-                utils.zero_small_parts(self.wspace_l)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_l" + str(it) + ".txt", self.wspace_l[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_l" + str(it) + ".txt", self.vspace_l[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_lp" + str(it) + ".txt", self.wspace_lp[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_lp" + str(it) + ".txt", self.vspace_lp[:, it])
+
+                # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
+                # which is orthogonal to the space spanned by the right eigenvectors
+                if good_t_vec:
+                    if self.vspace_l is None:
+                        self.vspace_l = np.ndarray((self.ndim, 1), np.complex64)
+                        self.vspace_l[:, 0] = t_vec
+
+                        self.wspace_l = np.ndarray((self.ndim, 1), np.complex64)
+                        self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+
+                        self.vspace_lp = np.ndarray((self.ndim, 1), np.complex64)
+                        self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+
+                        self.wspace_lp = np.ndarray((self.ndim, 1), np.complex64)
+                        self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+                    else:
+                        self.vspace_l = np.c_[self.vspace_r, t_vec]
+                        self.vspace_lp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
+                        self.wspace_l = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
+                        self.wspace_lp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
+
+
+                    utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
+                                         ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
+                    utils.zero_small_parts(self.vspace_l)
+                    utils.zero_small_parts(self.wspace_l)
+                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_l" + str(it) + ".txt", self.wspace_l[:, it])
+                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_l" + str(it) + ".txt", self.vspace_l[:, it])
+                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_lp" + str(it) + ".txt", self.wspace_lp[:, it])
+                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_lp" + str(it) + ".txt", self.vspace_lp[:, it])
 
                 it += 1
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-            #for ii in range(it):
-            #    for jj in range(it):
-            #        submat[ii, jj] = np.vdot(self.vspace_l[:, ii], self.wspace_l[:, jj])
 
             utils.zero_small_parts(submat)
             np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
@@ -175,18 +190,24 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
 
-        sb_dim = self.vspace_r.shape[1]+self.vspace_rp.shape[1]+self.vspace_l.shape[1]+self.vspace_lp.shape[1]
+        sb_dim = 0
+        for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
+            if vs is not None:
+                sb_dim = sb_dim + vs.shape[1]
         submat = np.ndarray((sb_dim, sb_dim), np.complex64)
+
         vi = 0
         for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
-            for ii in range(vs.shape[1]):
-                wj = 0
-                for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
-                    for jj in range(ws.shape[1]):
-                        submat[vi+ii, wj+jj] = np.vdot(vs[:, ii], ws[:, jj])
-                        print("submat["+str(vi+ii)+","+str(wj+jj)+"] = ", submat[vi+ii, wj+jj])
-                    wj = wj + ws.shape[1]
-            vi = vi + vs.shape[1]
+            if vs is not None :
+                for ii in range(vs.shape[1]):
+                    wj = 0
+                    for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
+                        if ws is not None:
+                            for jj in range(ws.shape[1]):
+                                submat[vi+ii, wj+jj] = np.vdot(vs[:, ii], ws[:, jj])
+                                print("submat["+str(vi+ii)+","+str(wj+jj)+"] = ", submat[vi+ii, wj+jj])
+                            wj = wj + ws.shape[1]
+                vi = vi + vs.shape[1]
         exit()
 
         return submat
