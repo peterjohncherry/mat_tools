@@ -100,14 +100,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
                 utils.zero_small_parts(self.vspace_r)
                 utils.zero_small_parts(self.wspace_r)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_r[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_r[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_rp[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_rp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_r" + str(it) + ".txt", self.wspace_r[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_r" + str(it) + ".txt", self.vspace_r[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_rp" + str(it) + ".txt", self.wspace_rp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_rp" + str(it) + ".txt", self.vspace_rp[:, it])
 
                 # Now build left eigenvectors
                 t_vec = self.get_left_evec(self.vspace_r[:, it])
+                utils.check_for_nans([t_vec], ["t_vec_pre_orth"])
                 t_vec, t_angle = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
+                utils.check_for_nans([t_vec], ["t_vec_post_orth"])
                 self.vspace_l[:, it] = t_vec
                 self.wspace_l[:, it] = self.sigma_constructor(t_vec)
                 self.vspace_lp[:, it] = self.get_pair('x', self.vspace_l[:, it])
@@ -116,10 +118,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                                      ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
                 utils.zero_small_parts(self.vspace_l)
                 utils.zero_small_parts(self.wspace_l)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_l[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_l[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_lp[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace" + str(it) + ".txt", self.vspace_lp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_l" + str(it) + ".txt", self.wspace_l[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_l" + str(it) + ".txt", self.vspace_l[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_lp" + str(it) + ".txt", self.wspace_lp[:, it])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_lp" + str(it) + ".txt", self.vspace_lp[:, it])
 
                 it += 1
 

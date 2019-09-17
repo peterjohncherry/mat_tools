@@ -78,22 +78,30 @@ def orthonormalize_v_against_mat_check(v, mat):
         return v, 1e-10
 
 
-def orthogonalize_v1_against_v2(v1, v2):
-    #print("v1 = ", v1, "\n v2 = ", v2)
-    v1_norm_orig = np.linalg.norm(v1)
-    print(v1_norm_orig)
-    #vnew = v1 - (np.vdot(v1, v2)/np.vdot(v2, v2))*v2
-    vnew = (v1 - v2)
-    vnew = vnew/np.linalg.norm(vnew)
-    return vnew, np.linalg.norm(vnew)/v1_norm_orig
+# Returns normed vector, second return value is false if norm of vector was too small for accurate
+def normalize(vec, threshold = 1e-10):
+    norm=np.linalg.norm(vec)
+    if norm > threshold:
+        return vec/norm, True
+    else:
+        return vec, False
 
+
+def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh= 1e-8, norm_thresh = 1e-12):
+    v1_norm_orig = np.linalg.norm(v1)
+    vnew, successful_norm = normalize( (v1 - v2), norm_thresh)
+    if not successful_norm:
+        print("Normalization in matrix_utils.orthogonalize_v1_against_v2(v1, v2) failed")
+        return vnew, successful_norm
+    else:
+        return vnew, (np.linalg.norm(vnew) / v1_norm_orig > arctan_norm_angle_thresh)
 
 # Normalize v against vectors stored as columns in A
 def orthonormalize_v_against_mat(v, mat):
     ncols = mat.shape[1]
     for ii in range(ncols):
         v = v - np.vdot(mat[:, ii], v) * mat[:, ii]
-    return v / np.linalg.norm(v)
+    return normalize(v)
 
 
 def print_only_large_imag(vec, name=" "):
@@ -163,13 +171,6 @@ def find_nonzero_elems(seedname, input_array, threshold=1e-10):
     for idx in non_zero_ids:
         outfile.write(str(idx) + " =  " + str(input_array[idx]) + "\n")
     outfile.close()
-
-def normalize(vec):
-    norm=np.linalg.norm(vec)
-    if norm > 1e-10:
-        return vec/norm
-    else:
-        sys.exit("ABORTING!! Norm of vector too small to perform accurate normalization.")
 
 
 def print_nonzero_numpy_elems(my_arr, arr_name = "??", thresh = 1e-6):
