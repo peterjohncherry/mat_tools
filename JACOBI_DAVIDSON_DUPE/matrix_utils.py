@@ -171,6 +171,7 @@ def normalize(vec):
     else:
         sys.exit("ABORTING!! Norm of vector too small to perform accurate normalization.")
 
+
 def print_nonzero_numpy_elems(my_arr, arr_name = "??", thresh = 1e-6):
     if len(my_arr.shape) == 2 :
         for ii in range(my_arr.shape[0]):
@@ -182,3 +183,11 @@ def print_nonzero_numpy_elems(my_arr, arr_name = "??", thresh = 1e-6):
         for ii in range(my_arr.shape[0]):
                 if abs(my_arr[ii]) > thresh:
                     print(arr_name +"[" + str(ii) + "] = ", my_arr[ii])
+
+
+def check_for_nans(arr_list, name_list, exit_on_nan=True):
+    for ii in range(len(arr_list)):
+        if np.isnan(arr_list[ii]).any():
+            print(name_list[ii], "has a NaN")
+            if exit_on_nan:
+                exit()

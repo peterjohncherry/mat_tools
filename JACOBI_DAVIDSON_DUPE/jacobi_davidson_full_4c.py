@@ -95,6 +95,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_r[:, it] = self.sigma_constructor(self.vspace_r[:, it])
                 self.vspace_rp[:, it] = self.get_pair('x', self.vspace_r[:, it])
                 self.wspace_rp[:, it] = self.get_pair('Ax', self.wspace_r[:, it])
+                utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r,self.wspace_rp],
+                                     ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
+
                 utils.zero_small_parts(self.vspace_r)
                 utils.zero_small_parts(self.wspace_r)
                 np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_r[:, it])
@@ -109,6 +112,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_l[:, it] = self.sigma_constructor(t_vec)
                 self.vspace_lp[:, it] = self.get_pair('x', self.vspace_l[:, it])
                 self.wspace_lp[:, it] = self.get_pair('Ax', self.wspace_l[:, it])
+                utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
+                                     ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
                 utils.zero_small_parts(self.vspace_l)
                 utils.zero_small_parts(self.wspace_l)
                 np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace" + str(it) + ".txt", self.wspace_l[:, it])
