@@ -108,18 +108,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
                     self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
 
-                print("self.vspace_r.shape = ", self.vspace_r.shape)
-                print("self.vspace_r[:,"+str(it)+"] = ", self.vspace_r[:,it])
-
-                utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r,self.wspace_rp],
-                                     ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
-
-                utils.zero_small_parts(self.vspace_r)
-                utils.zero_small_parts(self.wspace_r)
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_r" + str(it) + ".txt", self.wspace_r[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_r" + str(it) + ".txt", self.vspace_r[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_rp" + str(it) + ".txt", self.wspace_rp[:, it])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_rp" + str(it) + ".txt", self.vspace_rp[:, it])
+                # just to test, remove later
+                self.zero_check_and_save_rh(it)
 
                 # Now build left eigenvectors
                 t_vec = self.get_left_evec(self.vspace_r[:, it])
@@ -143,20 +133,14 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                         self.wspace_lp = np.ndarray((self.ndim, 1), np.complex64)
                         self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
                     else:
-                        self.vspace_l = np.c_[self.vspace_r, t_vec]
-                        self.vspace_lp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
-                        self.wspace_l = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
-                        self.wspace_lp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
+                        self.vspace_l = np.c_[self.vspace_l, t_vec]
+                        self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, it])]
+                        self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, it])]
+                        self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, it])]
 
+                    # just to test, remove later
+                    self.zero_check_and_save_lh(it)
 
-                    utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
-                                         ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
-                    utils.zero_small_parts(self.vspace_l)
-                    utils.zero_small_parts(self.wspace_l)
-                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_l" + str(it) + ".txt", self.wspace_l[:, it])
-                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_l" + str(it) + ".txt", self.vspace_l[:, it])
-                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/wspace_lp" + str(it) + ".txt", self.wspace_lp[:, it])
-                    np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/vspace_lp" + str(it) + ".txt", self.vspace_lp[:, it])
 
                 it += 1
 
@@ -171,19 +155,18 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             print("theta = ", theta)
             utils.print_nonzero_numpy_elems(hevecs, arr_name="hevecs")
 
-
             self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
             u_hat = np.zeros(self.ndim, np.complex64)
             dnorm = np.zeros(self.nev, np.complex64)
-            for iev in range(iev):
+            for iev in range(self.nev):
                 for ii in range(it):
                     self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[iev, ii]* self.vspace_l[:, ii]
                     u_hat = u_hat + hevecs[iev, ii] * self.wspace[:, ii]
                 self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev]*theta[iev]
                 dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
             utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs")
-            #utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat")
-            #utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
+            # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat")
+            # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
 
             print("dnorm = ", dnorm)
 
@@ -198,7 +181,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         vi = 0
         for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
-            if vs is not None :
+            if vs is not None:
                 for ii in range(vs.shape[1]):
                     wj = 0
                     for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
@@ -381,5 +364,29 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         return v2 - e*v1
 
     def sigma_constructor(self, vec):
-        #np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/mat_orig.txt", self.mat_orig)
         return np.matmul(self.mat_orig, vec)
+
+    def zero_check_and_save_rh(self, it):
+        print("self.vspace_r.shape = ", self.vspace_r.shape)
+        print("self.vspace_r[:," + str(it) + "] = ", self.vspace_r[:, it])
+
+        utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
+                             ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
+        utils.zero_small_parts(self.vspace_r)
+        utils.zero_small_parts(self.wspace_r)
+        utils.zero_small_parts(self.vspace_rp)
+        utils.zero_small_parts(self.wspace_rp)
+        utils.save_arrs_to_file([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
+                                ["self.vspace_r" + str(it), "self.vspace_rp" + str(it), "self.wspace_r" + str(it),
+                                 "self.wspace_rp" + str(it)])
+
+    def zero_check_and_save_lh(self, it):
+        utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
+                             ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
+        utils.zero_small_parts(self.vspace_l)
+        utils.zero_small_parts(self.wspace_l)
+        utils.zero_small_parts(self.vspace_lp)
+        utils.zero_small_parts(self.wspace_lp)
+        utils.save_arrs_to_file([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
+                                ["self.vspace_l" + str(it), "self.vspace_lp" + str(it),
+                                 "self.wspace_l" + str(it), "self.wspace_lp" + str(it)])

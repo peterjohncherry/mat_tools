@@ -202,3 +202,8 @@ def check_for_nans(arr_list, name_list, exit_on_nan=True):
             print(name_list[ii], "has a NaN")
             if exit_on_nan:
                 exit()
+
+
+def save_arrs_to_file( arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/"):
+    for ii in range(len(arr_list)):
+        np.savetxt(parent_folder+arr_names[ii] + ".txt", arr_list[ii])
