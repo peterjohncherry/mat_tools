@@ -89,12 +89,22 @@ def normalize(vec, threshold = 1e-10):
 
 def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh= 1e-8, norm_thresh = 1e-12):
     v1_norm_orig = np.linalg.norm(v1)
-    vnew, successful_norm = normalize( (v1 - v2), norm_thresh)
-    if not successful_norm:
-        print("Normalization in matrix_utils.orthogonalize_v1_against_v2(v1, v2) failed")
-        return vnew, successful_norm
+
+    v1new, check1 = normalize(v1, norm_thresh)
+    if check1:
+        v2new, check2 = normalize(v2, norm_thresh)
+        if check2:
+            vnew, successful_norm = normalize((v1 - v2), norm_thresh)
+            if not successful_norm:
+                print("Normalization in matrix_utils.orthogonalize_v1_against_v2(v1, v2) failed : "
+                      "||v1-v2|| < " + str(norm_thresh))
+                return vnew, successful_norm
+            else:
+                return vnew, (np.linalg.norm(vnew) / v1_norm_orig > arctan_norm_angle_thresh)
+        else:
+            exit("normalization of v2 failed")
     else:
-        return vnew, (np.linalg.norm(vnew) / v1_norm_orig > arctan_norm_angle_thresh)
+        exit("normalization of v1 failed")
 
 # Normalize v against vectors stored as columns in A
 def orthonormalize_v_against_mat(v, mat):

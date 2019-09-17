@@ -39,15 +39,15 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.dnorm = np.zeros(self.nev, dtype=np.float32)
 
         # Guess vectors, residuals, etc.,
-        self.vspace_r = np.zeros((self.ndim, self.nev), dtype=np.complex64)
-        self.wspace_r = np.zeros_like(self.vspace_r)
-        self.vspace_l = np.zeros_like(self.vspace_r)
-        self.wspace_l = np.zeros_like(self.vspace_r)
+        self.vspace_r = None
+        self.wspace_r = None
+        self.vspace_l = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.wspace_l = np.zeros((self.ndim, self.nev), dtype=np.complex64)
 
-        self.vspace_rp = np.zeros_like(self.vspace_r)
-        self.wspace_rp = np.zeros_like(self.vspace_r)
-        self.vspace_lp = np.zeros_like(self.vspace_r)
-        self.wspace_lp = np.zeros_like(self.vspace_r)
+        self.vspace_rp = None
+        self.wspace_rp = None
+        self.vspace_lp = np.zeros((self.ndim, self.nev), dtype=np.complex64)
+        self.wspace_lp = np.zeros((self.ndim, self.nev), dtype=np.complex64)
 
         self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
 
@@ -91,10 +91,27 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 d1, d2 = self.orthonormalize_pair(t_vec)
 
                 # Build symmetrized t_vec using coeffs, and extend vspace and wspace
-                self.vspace_r[:, it] = d1 * t_vec + d2 * t_vec_pair
-                self.wspace_r[:, it] = self.sigma_constructor(self.vspace_r[:, it])
-                self.vspace_rp[:, it] = self.get_pair('x', self.vspace_r[:, it])
-                self.wspace_rp[:, it] = self.get_pair('Ax', self.wspace_r[:, it])
+                if self.vspace_r is None:
+                    self.vspace_r = np.ndarray((self.ndim, 1), np.complex64)
+                    self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
+
+                    self.wspace_r = np.ndarray((self.ndim, 1), np.complex64)
+                    self.wspace_r[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+
+                    self.vspace_rp = np.ndarray((self.ndim, 1), np.complex64)
+                    self.vspace_rp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+
+                    self.wspace_rp = np.ndarray((self.ndim, 1), np.complex64)
+                    self.wspace_rp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+                else:
+                    self.vspace_r = np.c_[self.vspace_r, (d1 * t_vec + d2 * t_vec_pair)]
+                    self.vspace_rp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
+                    self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
+                    self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
+
+                print("self.vspace_r.shape = ", self.vspace_r.shape)
+                print("self.vspace_r[:,"+str(it)+"] = ", self.vspace_r[:,it])
+
                 utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r,self.wspace_rp],
                                      ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
 
