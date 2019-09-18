@@ -61,9 +61,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
         # maxs2 = int(self.maxs/2)
         it = 0
-
+        cycle = 0
         while it <= 12:
-            print("it = ", it)
+            print("\n\n=====================================================")
+            print("cycle = " , cycle, "it = ", it)
+            print("=====================================================")
             if it > self.maxs:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
@@ -82,10 +84,18 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-            utils.zero_small_parts(submat)
+#            utils.zero_small_parts(submat)
             np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
 
             self.get_residual_vectors(submat)
+ #           utils.zero_small_parts(self.r_vecs)
+ #           utils.zero_small_parts(self.u_vecs)
+            for vnum in range(self.r_vecs.shape[1]):
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/r_vecs_" + str(cycle)+"_"
+                           + str(vnum)+".txt", self.r_vecs[:, vnum])
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/u_vecs_" + str(cycle)+"_"
+                           + str(vnum)+".txt", self.u_vecs[:, vnum])
+            cycle = cycle + 1
 
     def extend_right_handed_spaces(self, t_vec, it):
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
@@ -350,10 +360,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 idx += 1
 
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
+        u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
+        print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
-            factor = u_m1_r / u_m1_u
-            print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
+            factor = u_m1_r / np.real(u_m1_u)
             return factor*v2-v1
         else:
             return -v1
@@ -364,10 +375,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def zero_check_and_save_rh(self, it):
         utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
                              ["self.vspace_r", "self.vspace_rp", "self.wspace_r", "self.wspace_rp"])
-        utils.zero_small_parts(self.vspace_r)
-        utils.zero_small_parts(self.wspace_r)
-        utils.zero_small_parts(self.vspace_rp)
-        utils.zero_small_parts(self.wspace_rp)
+#        utils.zero_small_parts(self.vspace_r)
+#        utils.zero_small_parts(self.wspace_r)
+#        utils.zero_small_parts(self.vspace_rp)
+#        utils.zero_small_parts(self.wspace_rp)
         utils.save_arrs_to_file([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
                                 ["self.vspace_r" + str(it), "self.vspace_rp" + str(it), "self.wspace_r" + str(it),
                                  "self.wspace_rp" + str(it)])
@@ -375,10 +386,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def zero_check_and_save_lh(self, it):
         utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
                              ["self.vspace_l", "self.vspace_lp", "self.wspace_l", "self.wspace_lp"])
-        utils.zero_small_parts(self.vspace_l)
-        utils.zero_small_parts(self.wspace_l)
-        utils.zero_small_parts(self.vspace_lp)
-        utils.zero_small_parts(self.wspace_lp)
+#        utils.zero_small_parts(self.vspace_l)
+#        utils.zero_small_parts(self.wspace_l)
+#        utils.zero_small_parts(self.vspace_lp)
+#        utils.zero_small_parts(self.wspace_lp)
         utils.save_arrs_to_file([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
                                 {"self.vspace_l" + str(it), "self.vspace_lp" + str(it), "self.wspace_l" + str(it),
                                  "self.wspace_lp" + str(it)})

@@ -29,12 +29,12 @@ def test_jacobi_davidson_4c():
     jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/RS_FILES/KEEPERS/full_mat")
     jd_test.solve()
 
+
 def test_jacobi_davidson_full_4c():
     nevals = 3
     jd_test = jd_f_4c.JacobiDavidsonFull4C(num_eigenvalues=nevals,
                                            rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
     jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/full_mat")
-    jd_test.initialize()
     jd_test.solve()
 
 
@@ -43,14 +43,15 @@ def test_array_reading():
     evals = np.float64(evals)
     np.savetxt("/home/peter/RS_FILES/4C/lapack_eigvals", evals, fmt='%10.5f')
 
+
 def test_v1_v2_orthogonalization():
-    # newv1 should be [ 0 0 0 1 1 1 ] with angle of 45 degrees
+    # new_v1 should be [ 0 0 0 1 1 1 ] with angle of 45 degrees
     v1 = np.array([1, 1, 1, 1, 1, 1])
     v2 = np.array([1, 1, 1, 0, 0, 0])
     print("v1 = ", v1)
     print("v2 = ", v2)
-    newv1, vangle = utils.orthogonalize_v1_against_v2(v1, v2)
-    print("newv1 = ", newv1)
-    print("vangle = ", np.degrees(np.arcsin(vangle)))
+    new_v1, angle = utils.orthogonalize_v1_against_v2(v1, v2)
+    print("new_v1 = ", new_v1)
+    print("angle = ", np.degrees(np.arcsin(angle)))
 
 
