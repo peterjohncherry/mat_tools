@@ -5,7 +5,7 @@ import sys
 
 class Solver:
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace= 6,
+    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
 
         self.rs_filename = rs_filename

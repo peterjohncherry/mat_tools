@@ -27,26 +27,30 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.vspace_lp = None
         self.wspace_lp = None
 
+        if self.pe_rot:
+            self.nvirt = self.ndims - self.nocc
+        else:
+            self.nvirt = int(self.ndims / 2) - self.nocc
+
+        self.nov = self.nvirt * self.nocc
+        self.ndim = 2 * self.nov
+
+        self.read_1e_eigvals_and_eigvecs(
+            seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
+        self.get_esorted_general()
+
     def solve(self):
         self.initialize_first_iteration()
         self.main_loop()
 
-    def initialize_first_iteration(self):
+    def initialize_first_iteration(self, symmetry: object = 'general'):
+        self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
+        for iev in range(self.nev):
+            self.u_vecs[:self.nov, iev] = self.construct_guess(iev, symmetry)
+
         # for convergence checking
         self.skip = np.full(self.nev, False)
         self.dnorm = np.zeros(self.nev, dtype=np.float32)
-
-        # Guess vectors, residuals, etc.,
-        self.vspace_r = None
-        self.wspace_r = None
-        self.vspace_l = None
-        self.wspace_l = None
-
-        self.vspace_rp = None
-        self.wspace_rp = None
-        self.vspace_lp = None
-        self.wspace_lp = None
-
         self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex64)
 
         # Subspace Hamiltonian
@@ -55,15 +59,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def main_loop(self):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
-        maxs2 = int(self.maxs/2)
+        # maxs2 = int(self.maxs/2)
         it = 0
-        print("maxs2 = ", maxs2)
-        print("nev = ", self.nev)
-        evals, evecs = np.linalg.eig(self.mat_orig)
-        np.set_printoptions(threshold=sys.maxsize)
-        print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
 
-        while it < 3:
+        while it <= 12:
             print("it = ", it)
             if it > self.maxs:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
@@ -72,7 +71,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 # if self.skip[iev]:
                 #     continue
 
-                utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs")
                 if it < self.nev:
                     t_vec = self.u_vecs[:, iev]
                 else:
@@ -92,8 +90,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def extend_right_handed_spaces(self, t_vec, it):
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
-        utils.print_nonzero_numpy_elems(t_vec, arr_name="t_vec")
-        utils.print_nonzero_numpy_elems(t_vec_pair, arr_name="t_vec_pair")
 
         # Get coefficients for symmetrization
         d1, d2 = self.orthonormalize_pair(t_vec)
@@ -169,7 +165,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                         if ws is not None:
                             for jj in range(ws.shape[1]):
                                 submat[vi+ii, wj+jj] = np.vdot(vs[:, ii], ws[:, jj])
-                                print("submat["+str(vi+ii)+","+str(wj+jj)+"] = ", submat[vi+ii, wj+jj])
                             wj = wj + ws.shape[1]
                 vi = vi + vs.shape[1]
 
@@ -181,11 +176,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         return vec
 
     def get_residual_vectors(self, submat):
-
         # Ritz values and Ritz vectors defined in trial vspace
         theta, hevecs = np.linalg.eig(submat)
-        print("theta = ", theta)
-        utils.print_nonzero_numpy_elems(hevecs, arr_name="hevecs")
+        utils.print_nonzero_numpy_elems(theta, arr_name="theta")
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
@@ -212,31 +205,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
 
-        utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs")
         # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat")
         # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
 
         print("dnorm = ", dnorm)
-
-    def initialize(self, symmetry_type='general'):
-
-        print("self.maxs = ", self.maxs)
-        if self.pe_rot:
-            self.nvirt = self.ndims - self.nocc
-        else:
-            self.nvirt = int(self.ndims / 2) - self.nocc
-
-        self.nov = self.nvirt * self.nocc
-        self.ndim = 2*self.nov
-        print("self.ndim = ", self.ndim)
-
-        self.read_1e_eigvals_and_eigvecs(
-            seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
-        self.get_esorted_general()
-
-        self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
-        for iev in range(self.nev):
-            self.u_vecs[:self.nov, iev] = self.construct_guess(iev, symmetry_type)
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
@@ -362,6 +334,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v1[idx] = 0.0 + 0.0j
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
+
         # Second half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
@@ -375,13 +348,15 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v1[idx] = 0.0 + 0.0j
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
-        e = np.vdot(self.u_vecs[:, iev], v1)
-        c = np.vdot(self.u_vecs[:, iev], v2)
-        print("uMinvr = ", e)
-        print("uMinvu = ", c)
-        e = e/np.real(c)
 
-        return v2 - e*v1
+        u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
+        if abs(u_m1_u) > 1e-8:
+            u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
+            factor = u_m1_r / u_m1_u
+            print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
+            return factor*v2-v1
+        else:
+            return -v1
 
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)
@@ -407,3 +382,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         utils.save_arrs_to_file([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
                                 {"self.vspace_l" + str(it), "self.vspace_lp" + str(it), "self.wspace_l" + str(it),
                                  "self.wspace_lp" + str(it)})
+
+    def get_numpy_evals(self):
+        evals, evecs = np.linalg.eig(self.mat_orig)
+        np.set_printoptions(threshold=sys.maxsize)
+        print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))

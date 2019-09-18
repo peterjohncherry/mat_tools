@@ -9,7 +9,7 @@ import matrix_utils as utils
 class JacobiDavidsonTDA4C(eps_solvers.Solver):
     np.set_printoptions(precision=4)
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace= 6,
+    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
         super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
@@ -114,9 +114,8 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
         it = 0
         skip = np.full(self.maxs, False)
-        print ("skip = ", skip)
-        print ("len(skip) = ", len(skip))
-        converged = False
+        print("skip = ", skip)
+        print("len(skip) = ", len(skip))
         # While not_converged and (it-self.maxs)<0:
         while it < self.maxs:
 
@@ -150,8 +149,8 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             for iev in range(self.vspace.shape[1]):
                 utils.zero_small_parts(self.vspace)
                 utils.zero_small_parts(self.wspace)
-                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])#, fmt='%.4f')
-                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])#, fmt='%.4f')
+                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
+                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
 
             self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
             np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
@@ -172,24 +171,21 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                 self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
                 self.r_vecs[:, iteta] = self.u_hats[:, iteta] - ritz_vals[iteta] * self.u_vecs[:, iteta]
                 self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
-#                tmp_uvec = np.matmul(self.vspace, hdiag[:, iteta])
-#                tmp_uhat = np.matmul(self.wspace, hdiag[:, iteta])
 
             self.teta = ritz_vals
 
             for ii in range(self.nev):
-                print ("self.threshold = ", self.threshold)
+                print("self.threshold = ", self.threshold)
                 if self.dnorm[ii] <= self.threshold:
                     skip[ii] = True
-                else :
+                else:
                     skip[ii] = False
 
             for ii in range(self.nev+1):
-                if ii == self.nev :
+                if ii == self.nev:
                     print("self.teta = ", self.teta)
                     sys.exit("Converged!!")
-                    break
-                if skip[ii] == False:
+                if skip[ii] is False:
                     break
 
             print(" it = ", it)
@@ -201,9 +197,9 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             utils.zero_small_parts(self.u_vecs)
             utils.zero_small_parts(self.r_vecs)
             for iev in range(self.u_vecs.shape[1]):
-                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])#, fmt='%.4f')
-                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])#, fmt='%.4f')
-                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])#, fmt='%.4f')
+                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])
+                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])
+                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])
             print("dnorm = ", self.dnorm)
             # end checking
 
