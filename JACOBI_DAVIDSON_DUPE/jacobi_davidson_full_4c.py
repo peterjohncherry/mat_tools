@@ -125,9 +125,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def extend_left_handed_spaces(self, it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
-        # Now build left eigenvectors
         t_vec = self.get_left_evec(self.vspace_r[:, it])
-        utils.check_for_nans([t_vec], ["t_vec_pre_orth"])
         t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
         utils.check_for_nans([t_vec], ["t_vec_post_orth"])
 
@@ -201,6 +199,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
                 if vs is not None:
                     for ii in range(vs.shape[1]):
+                        print("ii = ", ii, " ii+vi = ", ii+vi)
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
 
@@ -219,6 +218,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             # Calculation of residual vectors, and residual norms
             self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
+
+        #for iteta in range(self.u_vecs.shape[1]):
+        #    self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
+        #    self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
+        #    self.r_vecs[:, iteta] = self.u_hats[:, iteta] - ritz_vals[iteta] * self.u_vecs[:, iteta]
+        #    self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
+
 
         utils.zero_small_parts(self.r_vecs)
         utils.zero_small_parts(self.u_vecs)
