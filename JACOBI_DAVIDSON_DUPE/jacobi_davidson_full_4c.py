@@ -61,10 +61,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
         # maxs2 = int(self.maxs/2)
         it = 0
-        cycle = 0
-        while it <= 12:
+        self.cycle = 0
+        while it <= 8:
             print("\n\n=====================================================")
-            print("cycle = " , cycle, "it = ", it)
+            print("cycle = " , self.cycle, "it = ", it)
             print("=====================================================")
             if it > self.maxs:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
@@ -85,17 +85,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
 #            utils.zero_small_parts(submat)
+            utils.print_nonzero_numpy_elems(submat, arr_name="submat", thresh=1e-6)
+
             np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
 
             self.get_residual_vectors(submat)
- #           utils.zero_small_parts(self.r_vecs)
- #           utils.zero_small_parts(self.u_vecs)
-            for vnum in range(self.r_vecs.shape[1]):
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/r_vecs_" + str(cycle)+"_"
-                           + str(vnum)+".txt", self.r_vecs[:, vnum])
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/u_vecs_" + str(cycle)+"_"
-                           + str(vnum)+".txt", self.u_vecs[:, vnum])
-            cycle = cycle + 1
+
+            self.cycle = self.cycle + 1
 
     def extend_right_handed_spaces(self, t_vec, it):
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
@@ -188,19 +184,27 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
         theta, hevecs = np.linalg.eig(submat)
-        utils.print_nonzero_numpy_elems(theta, arr_name="theta")
+        utils.zero_small_parts(hevecs)
+
+        # ordering eigenvalues by absolute value
+        idx = abs(theta).argsort()
+        theta = theta[idx]
+        utils.print_nonzero_numpy_elems(theta, arr_name="theta_x")
+        hevecs = hevecs[:, idx]
+        for ii in range(hevecs.shape[1]):
+            np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
-        vi = 0
         for iev in range(self.nev):
+            vi = 0
             for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
                 if vs is not None:
                     for ii in range(vs.shape[1]):
-                        self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[iev, ii] * vs[:, ii]
+                        self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
 
-        # Construction of u_hat from Ritz_vectors and w_spaces, residual vectors, and residual norms
+        # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
         self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
@@ -209,14 +213,24 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
-                        u_hat = u_hat + hevecs[iev, jj] * ws[:, jj]
+                        u_hat = u_hat + hevecs[jj+wj, iev] * ws[:, jj]
                     dnorm = np.zeros(self.nev, np.complex64)
                     wj = wj + ws.shape[1]
+            # Calculation of residual vectors, and residual norms
             self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
 
-        # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat")
-        # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs")
+        utils.zero_small_parts(self.r_vecs)
+        utils.zero_small_parts(self.u_vecs)
+        for vnum in range(self.r_vecs.shape[1]):
+            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/r_vecs_" + str(self.cycle) + "_"
+                       + str(vnum) + ".txt", self.r_vecs[:, vnum])
+            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/u_vecs_" + str(self.cycle) + "_"
+                       + str(vnum) + ".txt", self.u_vecs[:, vnum])
+
+        # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat", thresh=1e-4)
+        # utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs", thresh=1e-4)
+        # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs", thresh=1e-4)
 
         print("dnorm = ", dnorm)
 

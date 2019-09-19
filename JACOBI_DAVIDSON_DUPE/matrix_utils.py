@@ -184,7 +184,7 @@ def find_nonzero_elems(seedname, input_array, threshold=1e-10):
     outfile.close()
 
 
-def print_nonzero_numpy_elems(my_arr, arr_name="??", thresh=1e-6):
+def print_nonzero_numpy_elems(my_arr, arr_name="??", thresh=1e-10):
     if len(my_arr.shape) == 2:
         for ii in range(my_arr.shape[0]):
             for jj in range(my_arr.shape[1]):
