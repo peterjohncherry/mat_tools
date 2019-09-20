@@ -79,6 +79,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 else:
                     t_vec = self.get_new_tvec(iev)
 
+                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/t_vec" + str(it) + ".txt", t_vec)
+
                 self.extend_right_handed_spaces(t_vec, it)
                 self.extend_left_handed_spaces(it)
                 it = it+1
@@ -122,6 +124,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         # just to test, remove later
         self.zero_check_and_save_rh(it)
+        it = it + 1
 
     def extend_left_handed_spaces(self, it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
