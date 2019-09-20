@@ -63,7 +63,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # maxs2 = int(self.maxs/2)
         it = 0
 
-        while it <= 3:
+        while it <= 10:
             print("\n\n=====================================================")
             print("cycle = ", self.cycle, "it = ", it)
             print("=====================================================")
@@ -182,21 +182,21 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
-        theta, hevecs = np.linalg.eig(submat)
+        ritz_vals, hevecs = np.linalg.eig(submat)
         utils.zero_small_parts(hevecs)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
         # (eigenvalues in the spectrum are always in positive and negative pairs)
-        print("theta orig = ", theta)
-        idx = theta.argsort()
-        t2 = int(len(theta)/2)
+        print("theta orig = ", ritz_vals)
+        idx = ritz_vals.argsort()
+        t2 = int(len(ritz_vals)/2)
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
         print("idx = ", idx)
-        theta = theta[idx]
+        ritz_vals = ritz_vals[idx]
         hevecs = hevecs[:, idx]
-        print("theta sorted = ", theta)
+        print("theta sorted = ", ritz_vals)
 
         for ii in range(hevecs.shape[1]):
             np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
@@ -226,7 +226,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                         u_hats[:, iev] = u_hats[:, iev] + hevecs[jj+wj, iev] * ws[:, jj]
                     wj = wj + ws.shape[1]
             # Calculation of residual vectors, and residual norms
-            self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * theta[iev]
+            self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * ritz_vals[iev]
 
         utils.zero_small_parts(self.r_vecs)
         utils.zero_small_parts(self.u_vecs)
@@ -236,7 +236,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             dnorm[ii] = np.linalg.norm(self.r_vecs[:, ii])
 
         print("dnorm = ", dnorm)
-        exit()
+        self.teta = ritz_vals[:self.nev]
+
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
@@ -347,12 +348,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def get_new_tvec(self, iev):
         v1 = np.ndarray(self.ndim, np.complex64)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.ndim, np.complex64)  # v2 = M^{-1}*u
-        teta_iev = self.teta[iev]
         idx = 0
         # First half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
-                ediff = (self.evalai(ii, jj) - teta_iev)
+                ediff = (self.evalai(ii, jj) - self.teta[iev])
                 if abs(ediff) > 1e-8:
                     ediff = 1 / ediff
                     v1[idx] = self.r_vecs[idx, iev] * ediff
@@ -366,7 +366,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Second half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
-                ediff = -(self.evalai(ii, jj) + teta_iev)
+                ediff = -(self.evalai(ii, jj) + self.teta[iev])
                 if abs(ediff) > 1e-8:
                     ediff = 1 / ediff
                     v1[idx] = self.r_vecs[idx, iev] * ediff
