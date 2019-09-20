@@ -196,18 +196,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         theta = theta[idx]
         hevecs = hevecs[:, idx]
         print("theta sorted = ", theta)
-        smallest_pos_eval = -1
-        #while smallest_pos_eval < len(theta):
-        #    smallest_pos_eval = smallest_pos_eval + 1
-        #    if theta[smallest_pos_eval] < 0.0:
-        #        for ii in range(smallest_pos_eval):
-        #            idx[ii] = smallest_pos_eval+ii
-        #            idx[smallest_pos_eval+ii] = ii
-        #        break
-        #print("mirrored_idx = ", idx)
-        #theta = theta[idx]
-        #print("mirrored_theta = ", theta)
-        #hevecs = hevecs[:, idx]
+
         for ii in range(hevecs.shape[1]):
             np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
 
