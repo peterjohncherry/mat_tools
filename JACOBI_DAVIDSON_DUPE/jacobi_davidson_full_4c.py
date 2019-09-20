@@ -212,25 +212,27 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         for ii in range(self.u_vecs.shape[1]):
             np.savetxt("u_vecs_"+str(ii)+"_"+str(self.cycle)+".txt", self.u_vecs[:, ii])
-        exit()
+
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
         self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
+        u_hats = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
-            u_hat = np.zeros(self.ndim, np.complex64)
             wj = 0
             for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
-                        u_hat = u_hat + hevecs[jj+wj, iev] * ws[:, jj]
+                        u_hats[:, iev] = u_hats[:, iev] + hevecs[jj+wj, iev] * ws[:, jj]
                     dnorm = np.zeros(self.nev, np.complex64)
                     wj = wj + ws.shape[1]
             # Calculation of residual vectors, and residual norms
-            self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * theta[iev]
+            self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
-
+        for ii in range(u_hats.shape[1]):
+            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", u_hats[:, ii])
         exit()
+
         #for iteta in range(self.u_vecs.shape[1]):
         #    self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
         #    self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
