@@ -224,37 +224,20 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 if ws is not None:
                     for jj in range(ws.shape[1]):
                         u_hats[:, iev] = u_hats[:, iev] + hevecs[jj+wj, iev] * ws[:, jj]
-                    dnorm = np.zeros(self.nev, np.complex64)
                     wj = wj + ws.shape[1]
             # Calculation of residual vectors, and residual norms
             self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * theta[iev]
-            dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
-        for ii in range(u_hats.shape[1]):
-            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
-            np.savetxt("r_vecs_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
-
-        exit()
-
-        #for iteta in range(self.u_vecs.shape[1]):
-        #    self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
-        #    self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
-        #    self.r_vecs[:, iteta] = self.u_hats[:, iteta] - ritz_vals[iteta] * self.u_vecs[:, iteta]
-        #    self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
 
 
         utils.zero_small_parts(self.r_vecs)
         utils.zero_small_parts(self.u_vecs)
-        for vnum in range(self.r_vecs.shape[1]):
-            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/r_vecs_" + str(self.cycle) + "_"
-                       + str(vnum) + ".txt", self.r_vecs[:, vnum])
-            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/u_vecs_" + str(self.cycle) + "_"
-                       + str(vnum) + ".txt", self.u_vecs[:, vnum])
-
-        # utils.print_nonzero_numpy_elems(u_hat, arr_name="u_hat", thresh=1e-4)
-        # utils.print_nonzero_numpy_elems(self.u_vecs, arr_name="u_vecs", thresh=1e-4)
-        # utils.print_nonzero_numpy_elems(self.r_vecs, arr_name="r_vecs", thresh=1e-4)
+        for ii in range(u_hats.shape[1]):
+            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", u_hats[:, ii])
+            np.savetxt("r_vecs_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
+            dnorm[ii] = np.linalg.norm(self.r_vecs[:, ii])
 
         print("dnorm = ", dnorm)
+        exit()
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
