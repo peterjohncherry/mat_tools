@@ -192,6 +192,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(hevecs.shape[1]):
             np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
 
+        exit()
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
@@ -201,7 +202,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     for ii in range(vs.shape[1]):
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
-        exit()
+
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
@@ -219,6 +220,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
 
+        exit()
         #for iteta in range(self.u_vecs.shape[1]):
         #    self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
         #    self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
@@ -405,18 +407,18 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                                     ["vspace_r" + str(it), "vspace_rp" + str(it), "wspace_r" + str(it),
                                      "wspace_rp" + str(it)])
 
-    def zero_check_and_save_lh(self, it):
-        utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
-                             ["vspace_l", "vspace_lp", "wspace_l", "wspace_lp"])
-        utils.zero_small_parts(self.vspace_l)
-        utils.zero_small_parts(self.wspace_l)
-        utils.zero_small_parts(self.vspace_lp)
-        utils.zero_small_parts(self.wspace_lp)
+    def zero_check_and_save_r_vecs(self, it):
+        utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
+                             ["vspace_r", "vspace_rp", "wspace_r", "wspace_rp"])
+        utils.zero_small_parts(self.vspace_r)
+        utils.zero_small_parts(self.wspace_r)
+        utils.zero_small_parts(self.vspace_rp)
+        utils.zero_small_parts(self.wspace_rp)
         for ii in range(it):
-            utils.save_arrs_to_file([self.vspace_l[:, it], self.vspace_lp[:, it], self.wspace_l[:, it],
-                                     self.wspace_lp[:, it]],
-                                    {"vspace_l" + str(it), "vspace_lp" + str(it), "wspace_l" + str(it),
-                                     "wspace_lp" + str(it)})
+            utils.save_arrs_to_file([self.vspace_r[:, it], self.vspace_rp[:, it], self.wspace_r[:, it],
+                                     self.wspace_rp[:, it]],
+                                    ["vspace_r" + str(it), "vspace_rp" + str(it), "wspace_r" + str(it),
+                                     "wspace_rp" + str(it)])
 
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)
