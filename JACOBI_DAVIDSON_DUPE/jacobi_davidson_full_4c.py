@@ -230,7 +230,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * theta[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
         for ii in range(u_hats.shape[1]):
-            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", u_hats[:, ii])
+            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
+            np.savetxt("r_vecs_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
+
         exit()
 
         #for iteta in range(self.u_vecs.shape[1]):
