@@ -184,15 +184,33 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         theta, hevecs = np.linalg.eig(submat)
         utils.zero_small_parts(hevecs)
 
-        # ordering eigenvalues by absolute value
-        idx = abs(theta).argsort()
+        # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
+        # (eigenvalues in the spectrum are always in positive and negative pairs)
+        print("theta orig = ", theta)
+        idx = theta.argsort()
+        t2 = int(len(theta)/2)
+        for ii in range(t2):
+            idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
+
+        print("idx = ", idx)
         theta = theta[idx]
-        utils.print_nonzero_numpy_elems(theta, arr_name="theta_x")
         hevecs = hevecs[:, idx]
+        print("theta sorted = ", theta)
+        smallest_pos_eval = -1
+        #while smallest_pos_eval < len(theta):
+        #    smallest_pos_eval = smallest_pos_eval + 1
+        #    if theta[smallest_pos_eval] < 0.0:
+        #        for ii in range(smallest_pos_eval):
+        #            idx[ii] = smallest_pos_eval+ii
+        #            idx[smallest_pos_eval+ii] = ii
+        #        break
+        #print("mirrored_idx = ", idx)
+        #theta = theta[idx]
+        #print("mirrored_theta = ", theta)
+        #hevecs = hevecs[:, idx]
         for ii in range(hevecs.shape[1]):
             np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
 
-        exit()
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
@@ -203,6 +221,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
 
+        for ii in range(self.u_vecs.shape[1]):
+            np.savetxt("u_vecs_"+str(ii)+"_"+str(self.cycle)+".txt", self.u_vecs[:, ii])
+        exit()
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
