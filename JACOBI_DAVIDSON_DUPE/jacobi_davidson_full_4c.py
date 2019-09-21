@@ -57,6 +57,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Subspace Hamiltonian
         self.teta = np.zeros(self.nev, dtype=np.complex64)
 
+
+
     def main_loop(self):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
@@ -83,7 +85,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
                 self.extend_right_handed_spaces(t_vec, it)
                 self.extend_left_handed_spaces(it)
-                it = it+1
+                it = it + 1
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
@@ -97,6 +99,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.cycle = self.cycle + 1
 
     def extend_right_handed_spaces(self, t_vec, it):
+        print("extending right_handed_spaces")
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
 
@@ -124,19 +127,23 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         # just to test, remove later
         self.zero_check_and_save_rh(it)
-        it = it + 1
 
     def extend_left_handed_spaces(self, it):
+        print("extending_left_handed_spaces")
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
-        t_vec = self.get_left_evec(self.vspace_r[:, it])
-        t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, it])
-        utils.check_for_nans([t_vec], ["t_vec_post_orth"])
-
+        print("np.linalg.norm(self.vspace_r[:,it])=", np.linalg.norm(self.vspace_r[:,it]))
+        t_vec_l = self.get_left_evec(self.vspace_r[:, it])
+        t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, it])
+        print("good_t_vec = ", good_t_vec)
+        if it > 4:
+            exit()
         if good_t_vec:
+            print("good t_vec")
+            exit()
             if self.vspace_l is None:
                 self.vspace_l = np.ndarray((self.ndim, 1), np.complex64)
-                self.vspace_l[:, 0] = t_vec
+                self.vspace_l[:, 0] = t_vec_l
 
                 self.wspace_l = np.ndarray((self.ndim, 1), np.complex64)
                 self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
@@ -147,29 +154,32 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_lp = np.ndarray((self.ndim, 1), np.complex64)
                 self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
             else:
-                self.vspace_l = np.c_[self.vspace_l, t_vec]
+                self.vspace_l = np.c_[self.vspace_l, t_vec_l]
                 self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, it])]
                 self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, it])]
                 self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, it])]
 
+            it = it + 1
             # just to test, remove later
             self.zero_check_and_save_lh(it)
+
+        return it
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
 
         sb_dim = 0
-        for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
+        for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
             if vs is not None:
                 sb_dim = sb_dim + vs.shape[1]
-        submat = np.ndarray((sb_dim, sb_dim), np.complex64)
+        submat = np.zeros((sb_dim, sb_dim), np.complex64)
 
         vi = 0
-        for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
+        for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
             if vs is not None:
                 for ii in range(vs.shape[1]):
                     wj = 0
-                    for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
+                    for ws in [self.wspace_r, self.wspace_l, self.wspace_rp,  self.wspace_lp]:
                         if ws is not None:
                             for jj in range(ws.shape[1]):
                                 submat[vi+ii, wj+jj] = np.vdot(vs[:, ii], ws[:, jj])
@@ -179,9 +189,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         return submat
 
     @staticmethod
+    # [X,Y] --> [X, -Y]
     def get_left_evec(vec):
-        vec[int(len(vec)/2):] = vec[int(len(vec)/2):]
-        return vec
+        buff = np.zeros_like(vec)
+        buff[:int(len(vec)/2)] = vec[:int(len(vec)/2)]
+        buff[int(len(vec)/2):] = -vec[int(len(vec)/2):]
+        return buff
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
@@ -208,7 +221,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
             vi = 0
-            for vs in [self.vspace_r, self.vspace_rp, self.vspace_l, self.vspace_lp]:
+            for vs in [self.vspace_r, self.vspace_l,self.vspace_rp, self.vspace_lp]:
                 if vs is not None:
                     for ii in range(vs.shape[1]):
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
@@ -223,7 +236,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         u_hats = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
             wj = 0
-            for ws in [self.wspace_r, self.wspace_rp, self.wspace_l, self.wspace_lp]:
+            for ws in [self.wspace_r, self.wspace_l, self.wspace_rp, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
                         u_hats[:, iev] = u_hats[:, iev] + hevecs[jj+wj, iev] * ws[:, jj]
@@ -355,11 +368,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # First half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
-                ediff = (self.evalai(ii, jj) - self.teta[iev])
+                ediff = (self.evalai(ii, jj) - np.real(self.teta[iev]))
                 if abs(ediff) > 1e-8:
-                    ediff = 1 / ediff
-                    v1[idx] = self.r_vecs[idx, iev] * ediff
-                    v2[idx] = self.u_vecs[idx, iev] * ediff
+                    dtmp = 1 / ediff
+                    v1[idx] = self.r_vecs[idx, iev] * dtmp
+                    v2[idx] = self.u_vecs[idx, iev] * dtmp
                 else:
                     print("Warning, (E_{a}-E_{i})<1e-8")
                     v1[idx] = 0.0 + 0.0j
@@ -369,11 +382,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Second half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
-                ediff = -(self.evalai(ii, jj) + self.teta[iev])
+                ediff = -self.evalai(ii, jj) - np.real(self.teta[iev])
                 if abs(ediff) > 1e-8:
-                    ediff = 1 / ediff
-                    v1[idx] = self.r_vecs[idx, iev] * ediff
-                    v2[idx] = self.u_vecs[idx, iev] * ediff
+                    dtmp = 1 / ediff
+                    v1[idx] = self.r_vecs[idx, iev] * dtmp
+                    v2[idx] = self.u_vecs[idx, iev] * dtmp
                 else:
                     print("Warning, (E_{a}-E_{i})<1e-8")
                     v1[idx] = 0.0 + 0.0j

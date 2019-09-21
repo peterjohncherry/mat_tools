@@ -80,21 +80,25 @@ def orthonormalize_v_against_mat_check(v, mat):
 
 # Returns normed vector, second return value is false if norm of vector was too small for accurate
 def normalize(vec, threshold=1e-10):
-    norm = np.linalg.norm(vec)
+    buff = vec
+    norm = np.linalg.norm(buff)
     if norm > threshold:
-        return vec/norm, True
+        return buff/norm, True
     else:
-        return vec, False
+        return buff, False
 
 
 def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh=1e-8, norm_thresh=1e-12):
     v1_norm_orig = np.linalg.norm(v1)
-
+    print("v1_norm_orig = ", v1_norm_orig)
+    print("check1 : np.linalg.norm(v1)= ", np.linalg.norm(v1))
     v1new, check1 = normalize(v1, norm_thresh)
     if check1:
+        print("check2 : np.linalg.norm(v2)= ", np.linalg.norm(v2))
         v2new, check2 = normalize(v2, norm_thresh)
         if check2:
-            vnew, successful_norm = normalize((v1 - v2), norm_thresh)
+            print("check3 : np.linalg.norm(v1-v2) =", np.linalg.norm(v1new-v2new))
+            vnew, successful_norm = normalize((v1new - v2new), norm_thresh)
             if not successful_norm:
                 print("Normalization in matrix_utils.orthogonalize_v1_against_v2(v1, v2) failed : "
                       "||v1-v2|| < " + str(norm_thresh))
@@ -103,8 +107,10 @@ def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh=1e-8, norm_thre
                 return vnew, (np.linalg.norm(vnew) / v1_norm_orig > arctan_norm_angle_thresh)
         else:
             exit("normalization of v2 failed")
+            return v1, False
     else:
-        exit("normalization of v1 failed")
+        print("normalization of v1 failed")
+        return v1, False
 
 
 # Normalize v against vectors stored as columns in A
