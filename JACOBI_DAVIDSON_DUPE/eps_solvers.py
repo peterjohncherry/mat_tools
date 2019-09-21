@@ -41,8 +41,13 @@ class Solver:
         self.ndims = -1
         self.ndimc = -1
         self.nocc = -1
-        self.nvirt = -1
 
+        if self.pe_rot:
+            self.nvirt = self.ndims - self.nocc
+        else:
+            self.nvirt = int(self.ndims / 2) - self.nocc
+
+        self.nov = self.nvirt * self.nocc
         self.mat_orig = None
         self.ndim = None
         self.esorted = None
@@ -104,3 +109,30 @@ class Solver:
         print("ndim = ", self.ndim)
         print("self.mat_orig.shape = ", self.mat_orig.shape, "\n")
         np.savetxt(file_seedname+"_py", self.mat_orig, fmt='%10.5f')
+
+    def get_esorted_general(self):
+        # Build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii, jj] = self.evalai(ii, jj)
+
+        self.esorted = np.reshape(self.esorted, self.nov)
+        self.eindex = np.argsort(self.esorted)
+        self.esorted = self.esorted[self.eindex]
+
+    def read_1e_eigvals_and_eigvecs(self, seedname):
+        evals_1e_all = mr.read_fortran_array(seedname)
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
+
+        num_pos_evals = self.nvirt + self.nocc
+        print("num_pos_evals = ", num_pos_evals)
+        if self.pe_rot:
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
+            self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
+        else:
+            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = evals_1e_all[num_pos_evals:]
+
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)

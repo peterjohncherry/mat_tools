@@ -21,7 +21,7 @@ def test_fortran_file_read():
     mr.read_binary_fortran_file('/home/peter/SMALL_PROGS/FORTRAN_MAT_OUTPUT/mat1_test.bin', "real", nrows, ncols)
 
 
-def test_jacobi_davidson_4c():
+def test_jacobi_davidson_tda_4c():
     nevals = 3
     jd_test = jdr4c.JacobiDavidsonTDA4C(num_eigenvalues=nevals,
                                         rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")

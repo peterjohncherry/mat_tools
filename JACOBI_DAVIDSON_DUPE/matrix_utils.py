@@ -90,14 +90,10 @@ def normalize(vec, threshold=1e-10):
 
 def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh=1e-8, norm_thresh=1e-12):
     v1_norm_orig = np.linalg.norm(v1)
-    print("v1_norm_orig = ", v1_norm_orig)
-    print("check1 : np.linalg.norm(v1)= ", np.linalg.norm(v1))
     v1new, check1 = normalize(v1, norm_thresh)
     if check1:
-        print("check2 : np.linalg.norm(v2)= ", np.linalg.norm(v2))
         v2new, check2 = normalize(v2, norm_thresh)
         if check2:
-            print("check3 : np.linalg.norm(v1-v2) =", np.linalg.norm(v1new-v2new))
             vnew, successful_norm = normalize((v1new - v2new), norm_thresh)
             if not successful_norm:
                 print("Normalization in matrix_utils.orthogonalize_v1_against_v2(v1, v2) failed : "
