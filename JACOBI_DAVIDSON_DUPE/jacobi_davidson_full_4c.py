@@ -8,14 +8,14 @@ import matrix_utils as utils
 class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
-                 solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
+                 solver="Jacobi_Davidson", method="Full", symmetry="general", pe_rot=False):
         super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
         self.wspace_r = None
 
-        # Guess space arrays - pairs of right-handed guesses#
+        # Guess space arrays - pairs of right-handed guesses
         self.vspace_rp = None
         self.wspace_rp = None
 
@@ -26,7 +26,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Guess space arrays - pairs of left-handed guesses
         self.vspace_lp = None
         self.wspace_lp = None
-
 
         self.ndim = 2 * self.nov
         self.cycle = 0
@@ -55,7 +54,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def main_loop(self):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
-        # maxs2 = int(self.maxs/2)
+
         it = 0
 
         while it <= 10:
@@ -70,7 +69,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for iev in range(self.nev):
                 # if self.skip[iev]:
                 #     continue
-
                 if it < self.nev:
                     t_vec = self.u_vecs[:, iev]
                 else:
