@@ -11,6 +11,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                  solver="Jacobi_Davidson", method="Full", symmetry="general", pe_rot=False):
         super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
+
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
         self.wspace_r = None
