@@ -28,14 +28,42 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.eindex = np.empty(self.nov)
         for ii in range(self.nov):
             self.eindex[ii] = ii
-        super().read_1e_eigvals_and_eigvecs("/home/peter/RS_FILES/4C/KEEPERS_TDA/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs()
 
         if self.P0_tsymm == "symmetric":
             self.get_esorted_symmetric()
         elif self.P0_tsymm == "general":
-            super().get_esorted_general()
+            self.get_esorted_general()
         else:
             sys.exit("have not implemented guess for symmetry " + self.P0_tsymm)
+
+    def read_1e_eigvals_and_eigvecs(self):
+        evals_1e_all = mr.read_fortran_array("/home/peter/RS_FILES/4C/KEEPERS_TDA/1el_eigvals")
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
+
+        num_pos_evals = self.nvirt + self.nocc
+        print("num_pos_evals = ", num_pos_evals)
+        if self.pe_rot:
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
+            self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
+        else:
+            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = evals_1e_all[num_pos_evals:]
+
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
+        self.eindex = np.argsort(self.evals_1e)
+
+    def get_esorted_general(self):
+        # Build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii, jj] = self.evalai(ii, jj)
+
+        self.esorted = np.reshape(self.esorted, self.nov)
+        self.eindex = np.argsort(self.esorted)
+        self.esorted = self.esorted[self.eindex]
 
     # gets energy differences
     # if symmetry is involved, then will get sorted eigvals in sets of 4
@@ -65,6 +93,11 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.construct_guess()
 
     def construct_guess(self):
+        for iev in range(self.nev):
+            self.u_vecs[:, iev] = self.tddft4_driver_guess(iev)
+
+    # iguess : index of the eigenvector being built
+    def tddft4_driver_guess(self, iguess):
         if self.P0_tsymm == "general":
             for iev in range(self.nev):
                 return self.build_general_guess_vec(iev)

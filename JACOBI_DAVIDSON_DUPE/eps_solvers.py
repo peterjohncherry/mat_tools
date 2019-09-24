@@ -41,13 +41,8 @@ class Solver:
         self.ndims = -1
         self.ndimc = -1
         self.nocc = -1
+        self.nvirt = -1
 
-        if self.pe_rot:
-            self.nvirt = self.ndims - self.nocc
-        else:
-            self.nvirt = int(self.ndims / 2) - self.nocc
-
-        self.nov = self.nvirt * self.nocc
         self.mat_orig = None
         self.ndim = None
         self.esorted = None
@@ -109,6 +104,11 @@ class Solver:
         print("ndim = ", self.ndim)
         print("self.mat_orig.shape = ", self.mat_orig.shape, "\n")
         np.savetxt(file_seedname+"_py", self.mat_orig, fmt='%10.5f')
+
+    # gets energy differences
+    # if symmetry is involved, then will get sorted eigvals in sets of 4
+    def evalai(self, occ_orb, virt_orb):
+        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints

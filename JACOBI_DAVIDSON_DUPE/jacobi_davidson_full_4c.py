@@ -28,12 +28,18 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.vspace_lp = None
         self.wspace_lp = None
 
+        if self.pe_rot:
+            self.nvirt = self.ndims - self.nocc
+        else:
+            self.nvirt = int(self.ndims / 2) - self.nocc
+
+        self.nov = self.nvirt * self.nocc
         self.ndim = 2 * self.nov
         self.cycle = 0
 
-        super().read_1e_eigvals_and_eigvecs(
+        self.read_1e_eigvals_and_eigvecs(
             seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
-        super().get_esorted_general()
+        self.get_esorted_general()
 
     def solve(self):
         self.initialize_first_iteration()
@@ -239,8 +245,36 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         print("dnorm = ", dnorm)
         self.teta = ritz_vals[:self.nev]
 
+
+    def get_esorted_general(self):
+        # Build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii, jj] = self.evalai(ii, jj)
+
+        self.esorted = np.reshape(self.esorted, self.nov)
+        self.eindex = np.argsort(self.esorted)
+        self.esorted = self.esorted[self.eindex]
+
     def evalai(self, occ_orb, virt_orb):
         return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
+
+    def read_1e_eigvals_and_eigvecs(self, seedname):
+        evals_1e_all = mr.read_fortran_array(seedname)
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
+
+        num_pos_evals = self.nvirt + self.nocc
+        print("num_pos_evals = ", num_pos_evals)
+        if self.pe_rot:
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
+            self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
+        else:
+            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = evals_1e_all[num_pos_evals:]
+
+        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
