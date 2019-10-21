@@ -40,6 +40,28 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/RS_FILES/4C/KEEPERS_FULL/1el_eigvals")
         self.get_esorted_general()
 
+    def read_1e_eigvals_and_eigvecs(self, seedname):
+        evals_1e_all = mr.read_fortran_array(seedname)
+        num_pos_evals = self.nvirt + self.nocc
+        if self.pe_rot:
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
+            self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
+        else:
+            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = evals_1e_all[num_pos_evals:]
+
+    def get_esorted_general(self):
+        # Build sorted list of eigval differences without imposing any symmetry constraints
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        for ii in range(self.nocc):
+            for jj in range(self.nvirt):
+                self.esorted[ii, jj] = self.evalai(ii, jj)
+
+        self.esorted = np.reshape(self.esorted, self.nov)
+        self.eindex = np.argsort(self.esorted)
+        self.esorted = self.esorted[self.eindex]
+
     def solve(self):
         self.initialize_first_iteration()
         self.main_loop()
@@ -61,7 +83,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
         it = 0
-
         while it <= 50:
             print("\n\n=====================================================")
             print("cycle = ", self.cycle, "it = ", it)
@@ -72,8 +93,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             if self.cycle > 2:
                 sys.exit("got to cycle 3, exit")
             for iev in range(self.nev):
-                # if self.skip[iev]:
-                #     continue
                 if self.cycle == 1:
                     t_vec = self.u_vecs[:, iev]
                 else:
@@ -195,46 +214,21 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
         self.r_vecs = np.zeros((self.ndim, self.nev), np.complex64)
-        u_hats = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
             wj = 0
+            u_hat = np.zeros(self.ndim, np.complex64)
             for ws in [self.wspace_r, self.wspace_l, self.wspace_rp, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
-                        u_hats[:, iev] = u_hats[:, iev] + ritz_vecs[jj+wj, iev] * ws[:, jj]
+                        u_hat = u_hat + ritz_vecs[jj+wj, iev] * ws[:, jj]
                     wj = wj + ws.shape[1]
 
             # Calculation of residual vectors, and residual norms
-            self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * ritz_vals[iev]
+            self.r_vecs[:, iev] = u_hat - self.u_vecs[:, iev] * ritz_vals[iev]
             dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
 
         print("dnorm = ", dnorm)
         self.teta = ritz_vals[:self.nev]
-
-    def get_esorted_general(self):
-        # Build sorted list of eigval differences without imposing any symmetry constraints
-        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
-        for ii in range(self.nocc):
-            for jj in range(self.nvirt):
-                self.esorted[ii, jj] = self.evalai(ii, jj)
-
-        self.esorted = np.reshape(self.esorted, self.nov)
-        self.eindex = np.argsort(self.esorted)
-        self.esorted = self.esorted[self.eindex]
-
-    def evalai(self, occ_orb, virt_orb):
-        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
-
-    def read_1e_eigvals_and_eigvecs(self, seedname):
-        evals_1e_all = mr.read_fortran_array(seedname)
-        num_pos_evals = self.nvirt + self.nocc
-        if self.pe_rot:
-            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
-            self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
-            self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
-        else:
-            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
-            self.evals_1e = evals_1e_all[num_pos_evals:]
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
@@ -351,6 +345,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             return factor*v2-v1
         else:
             return -v1
+
+    def evalai(self, occ_orb, virt_orb):
+        return self.evals_1e[self.nocc + virt_orb] - self.evals_1e[occ_orb]
 
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)

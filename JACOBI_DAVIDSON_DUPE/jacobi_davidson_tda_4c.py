@@ -21,7 +21,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.main_loop()
 
     # gets energy differences
-    # if symmetry is involved, then will get sorted eigvals in sets of 4
     def evalai(self, occ_orb, virt_orb):
         return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
