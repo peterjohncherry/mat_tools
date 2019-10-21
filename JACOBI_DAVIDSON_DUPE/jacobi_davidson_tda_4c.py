@@ -125,6 +125,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
             ritz_vals, hdiag = la.eig(self.submat)
 
+            # sort eigenvalues and eigenvectors
             ev_idxs = ritz_vals.argsort()
             ritz_vals = ritz_vals[ev_idxs]
             hdiag = hdiag[:, ev_idxs]
@@ -156,16 +157,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             else:
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
                 sys.exit("Converged!!")
-
-            # Checking
-            utils.zero_small_parts(self.u_hats)
-            utils.zero_small_parts(self.u_vecs)
-            utils.zero_small_parts(self.r_vecs)
-            for iev in range(self.u_vecs.shape[1]):
-                np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])
-                np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])
-                np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])
-            # end checking
 
     # 1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     # t = x.M^{-1}.u_{k} - u_{k}
@@ -249,3 +240,12 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                 self.u_hats = self.u_hats[:, rsorted_idxs]
                 self.r_vecs = self.r_vecs[:, rsorted_idxs]
                 self.dnorm = self.dnorm[rsorted_idxs]
+
+    def print_guess_arrays(self):
+        utils.zero_small_parts(self.u_hats)
+        utils.zero_small_parts(self.u_vecs)
+        utils.zero_small_parts(self.r_vecs)
+        for iev in range(self.u_vecs.shape[1]):
+            np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])
+            np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])
+            np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])
