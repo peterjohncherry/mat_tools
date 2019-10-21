@@ -2,7 +2,6 @@ import numpy as np
 import numpy.linalg as la
 import sys
 import eps_solvers
-import mat_reader as mr
 import matrix_utils as utils
 
 
@@ -57,7 +56,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
     def set_arrays(self):
         self.teta = np.zeros(self.nev, dtype=np.float64)
-        self.dnorm = np.zeros_like(self.teta)
         self.skip = np.full(self.nev, False, dtype=np.bool)
         self.nov = self.nocc * self.nvirt  # Dimension of guess vectors, one for each possible (E_a-E_i)^{-1}
 
@@ -66,8 +64,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.vspace = np.zeros_like(self.u_vecs)                            # trial vectors
         self.wspace = np.zeros_like(self.u_vecs)                            # H*v
         self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
-        self.u_hats = np.zeros_like(self.u_vecs)                            # H*u
-        self.submat = np.zeros((self.maxs, self.maxs), dtype=np.complex64)  # H represented in trial vector space
 
     def construct_guess(self):
         for iev in range(self.nev):
@@ -92,21 +88,24 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
             for iev in range(self.nev):
 
-                t_vec = np.empty_like(self.u_vecs[:, iev])
+                # get t_vec
                 if it < self.nev:
                     t_vec = self.u_vecs[:, iev]
                 else:
                     t_vec = self.get_new_tvec(iev)
 
+                # Orthogonalize t_vec w.r.t. trial space, print warning if orthogonalization seems dubious
                 t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(t_vec, self.vspace)
                 if vt_angle < 1e-8:
                     print("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
 
+                # Extend trial space with new t_vec
                 if it < self.nev:
                     self.vspace[:, iev] = t_vec
                 else:
                     self.vspace = np.c_[self.vspace, t_vec]
 
+                # w = H*v
                 new_w = self.sigma_constructor(t_vec)
                 if it < self.nev:
                     self.wspace[:, iev] = new_w
@@ -115,27 +114,28 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
                 it = it+1
 
-            # submat = v^{\dagger} * H * v
-            self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
-            ritz_vals, hdiag = la.eig(self.submat)
+            # build and diagonalize [v^{\dagger} * H * v] to get Ritz values and vectors
+            submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
+            ritz_vals, ritz_vecs = la.eig(submat)
 
             # sort eigenvalues and eigenvectors
             ev_idxs = ritz_vals.argsort()
             ritz_vals = ritz_vals[ev_idxs]
-            hdiag = hdiag[:, ev_idxs]
+            ritz_vecs = ritz_vecs[:, ev_idxs]
 
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = h_{ij}*w_{i},    --> eigenvectors of submat represented in wspace
             # r_{i} = \hat{u}_{i} - teta_{i}*v_{i}
-            for iteta in range(self.u_vecs.shape[1]):
-                self.u_vecs[:, iteta] = np.matmul(self.vspace, hdiag[:, iteta])
-                self.u_hats[:, iteta] = np.matmul(self.wspace, hdiag[:, iteta])
-                self.r_vecs[:, iteta] = self.u_hats[:, iteta] - ritz_vals[iteta] * self.u_vecs[:, iteta]
-                self.dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
+            dnorm = np.zeros_like(self.teta)
+            for iteta in range(self.nev):
+                self.u_vecs[:, iteta] = np.matmul(self.vspace, ritz_vecs[:, iteta])
+                u_hat = np.matmul(self.wspace, ritz_vecs[:, iteta])
+                self.r_vecs[:, iteta] = u_hat - ritz_vals[iteta] * self.u_vecs[:, iteta]
+                dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
 
-            self.teta = ritz_vals
+            self.teta = ritz_vals[:self.nev]
             for ii in range(self.nev):
-                if self.dnorm[ii] <= self.threshold:
+                if dnorm[ii] <= self.threshold:
                     skip[ii] = True
                 else:
                     skip[ii] = False
@@ -143,12 +143,12 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             print("self.teta = ", self.teta)
             if False in skip[:self.nev]:
                 print("Not converged on iteration ", it)
-                print("self.dnorm = ", self.dnorm, "skip = ", skip)
+                print("dnorm = ", dnorm, "skip = ", skip)
             else:
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
                 sys.exit("Converged!!")
 
-    # 1. Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
+    # Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     # t = x.M^{-1}.u_{k} - u_{k}
     # x = ( u*_{k}.M^{-1}r_{k} ] / ( u*_{k}.M^{-1}.u_{k} ) = e/c
     def get_new_tvec(self, iev):
@@ -174,7 +174,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
             factor = u_m1_r / u_m1_u
-            # print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
             return factor*v2-v1
         else:
             return -v1
