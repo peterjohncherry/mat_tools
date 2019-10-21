@@ -21,7 +21,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.initialize_first_iteration()
         self.main_loop()
 
-
     # gets energy differences
     # if symmetry is involved, then will get sorted eigvals in sets of 4
     def evalai(self, occ_orb, virt_orb):
@@ -93,21 +92,22 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
             for iev in range(self.nev):
 
+                t_vec = np.empty_like(self.u_vecs[:, iev])
                 if it < self.nev:
-                    self.t_vec = self.u_vecs[:, iev]
+                    t_vec = self.u_vecs[:, iev]
                 else:
-                    self.get_new_tvec(iev)
+                    t_vec = self.get_new_tvec(iev)
 
-                self.t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(self.t_vec, self.vspace)
+                t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(t_vec, self.vspace)
                 if vt_angle < 1e-8:
                     print("Warning! Angle of t_vec with respect to vspace is small : ", vt_angle)
 
                 if it < self.nev:
-                    self.vspace[:, iev] = self.t_vec
+                    self.vspace[:, iev] = t_vec
                 else:
-                    self.vspace = np.c_[self.vspace, self.t_vec]
+                    self.vspace = np.c_[self.vspace, t_vec]
 
-                new_w = self.sigma_constructor()
+                new_w = self.sigma_constructor(t_vec)
                 if it < self.nev:
                     self.wspace[:, iev] = new_w
                 else:
@@ -115,6 +115,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
                 it = it+1
 
+            # submat = v^{\dagger} * H * v
             self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
             ritz_vals, hdiag = la.eig(self.submat)
 
@@ -174,13 +175,13 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
             factor = u_m1_r / u_m1_u
             # print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
-            self.t_vec = factor*v2-v1
+            return factor*v2-v1
         else:
-            self.t_vec = -v1
+            return -v1
 
     # Extend w space by doing H*t
-    def sigma_constructor(self):
-        return np.matmul(self.mat_orig, self.t_vec)
+    def sigma_constructor(self, t_vec):
+        return np.matmul(self.mat_orig, t_vec)
 
     def print_guess_arrays(self):
         utils.zero_small_parts(self.u_hats)
