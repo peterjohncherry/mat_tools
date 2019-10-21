@@ -62,7 +62,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
         it = 0
 
-        while it <= 10:
+        while it <= 50:
             print("\n\n=====================================================")
             print("cycle = ", self.cycle, "it = ", it)
             print("=====================================================")
@@ -70,7 +70,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
             if self.cycle > 2:
-                exit("got to cycle 3, exit")
+                sys.exit("got to cycle 3, exit")
             for iev in range(self.nev):
                 # if self.skip[iev]:
                 #     continue
@@ -79,25 +79,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 else:
                     t_vec = self.get_new_tvec(iev)
 
-                np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/t_vec" + str(it) + ".txt", t_vec)
-
                 self.extend_right_handed_spaces(t_vec, it)
                 self.extend_left_handed_spaces(it)
                 it = it + 1
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-#            utils.zero_small_parts(submat)
-            utils.print_nonzero_numpy_elems(submat, arr_name="submat", thresh=1e-6)
-
-            np.savetxt('/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat' + str(it) + '.txt', submat)
-
             self.get_residual_vectors(submat)
 
             self.cycle = self.cycle + 1
 
     def extend_right_handed_spaces(self, t_vec, it):
-        print("extending right_handed_spaces")
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
 
@@ -106,7 +98,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         # Build symmetrized t_vec using coeffs, and extend vspace and wspace
         if self.vspace_r is None:
-
             self.vspace_r = np.ndarray((self.ndim, 1), np.complex64)
             self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
 
@@ -124,15 +115,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
             self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
 
-        # just to test, remove later
-        self.zero_check_and_save_rh(it)
-
     def extend_left_handed_spaces(self, it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, it])
         t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, it])
-        print("good_t_vec = ", good_t_vec)
         if good_t_vec:
             if self.vspace_l is None:
                 self.vspace_l = np.ndarray((self.ndim, 1), np.complex64)
@@ -152,12 +139,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, -1])]
                 self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, -1])]
 
-            # just to test, remove later
-            self.zero_check_and_save_lh()
-
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
-
         sb_dim = 0
         for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
             if vs is not None:
@@ -180,31 +163,24 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     @staticmethod
     # [X,Y] --> [X, -Y]
     def get_left_evec(vec):
-        buff = np.zeros_like(vec)
+        buff = np.empty_like(vec)
         buff[:int(len(vec)/2)] = vec[:int(len(vec)/2)]
         buff[int(len(vec)/2):] = -vec[int(len(vec)/2):]
         return buff
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
-        ritz_vals, hevecs = np.linalg.eig(submat)
-        utils.zero_small_parts(hevecs)
+        ritz_vals, ritz_vecs = np.linalg.eig(submat)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
         # (eigenvalues in the spectrum are always in positive and negative pairs)
-        print("theta orig = ", ritz_vals)
         idx = ritz_vals.argsort()
         t2 = int(len(ritz_vals)/2)
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
-        print("idx = ", idx)
         ritz_vals = ritz_vals[idx]
-        hevecs = hevecs[:, idx]
-        print("theta sorted = ", ritz_vals)
-
-        for ii in range(hevecs.shape[1]):
-            np.savetxt("hevecs_"+str(ii)+"_"+str(self.cycle)+".txt", hevecs[:, ii])
+        ritz_vecs = ritz_vecs[:, idx]
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
@@ -213,11 +189,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
                 if vs is not None:
                     for ii in range(vs.shape[1]):
-                        self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
+                        self.u_vecs[:, iev] = self.u_vecs[:, iev] + ritz_vecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
-
-        for ii in range(self.u_vecs.shape[1]):
-            np.savetxt("u_vecs_"+str(ii)+"_"+str(self.cycle)+".txt", self.u_vecs[:, ii])
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
@@ -228,17 +201,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for ws in [self.wspace_r, self.wspace_l, self.wspace_rp, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
-                        u_hats[:, iev] = u_hats[:, iev] + hevecs[jj+wj, iev] * ws[:, jj]
+                        u_hats[:, iev] = u_hats[:, iev] + ritz_vecs[jj+wj, iev] * ws[:, jj]
                     wj = wj + ws.shape[1]
+
             # Calculation of residual vectors, and residual norms
             self.r_vecs[:, iev] = u_hats[:, iev] - self.u_vecs[:, iev] * ritz_vals[iev]
-
-        utils.zero_small_parts(self.r_vecs)
-        utils.zero_small_parts(self.u_vecs)
-        for ii in range(u_hats.shape[1]):
-            np.savetxt("u_hats_" + str(ii) + "_" + str(self.cycle) + ".txt", u_hats[:, ii])
-            np.savetxt("r_vecs_" + str(ii) + "_" + str(self.cycle) + ".txt", self.r_vecs[:, ii])
-            dnorm[ii] = np.linalg.norm(self.r_vecs[:, ii])
+            dnorm[iev] = np.linalg.norm(self.r_vecs[:, iev])
 
         print("dnorm = ", dnorm)
         self.teta = ritz_vals[:self.nev]
@@ -259,10 +227,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
         evals_1e_all = mr.read_fortran_array(seedname)
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
-
         num_pos_evals = self.nvirt + self.nocc
-        print("num_pos_evals = ", num_pos_evals)
         if self.pe_rot:
             self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
             self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
@@ -270,8 +235,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         else:
             self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
             self.evals_1e = evals_1e_all[num_pos_evals:]
-
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
@@ -330,9 +293,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         d1 = 0.0
         d2 = 0.0
         z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
-
         d = np.real(z * np.conj(z))
         r = 1.0 - 4.0 * d
+
         if r >= 1e-12:
             if np.abs(d) > 1e-30:
                 t = 0.0 + np.sqrt(r)
@@ -351,7 +314,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_new_tvec(self, iev):
         v1 = np.ndarray(self.ndim, np.complex64)  # v1 = M^{-1}*r
-
         v2 = np.ndarray(self.ndim, np.complex64)  # v2 = M^{-1}*u
         idx = 0
         # First half of vector
@@ -381,12 +343,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v1[idx] = 0.0 + 0.0j
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
-        np.savetxt("v1_" + str(iev) + ".txt", v1)
-        np.savetxt("v2_" + str(iev) + ".txt", v2)
 
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
-        u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
-        print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
             factor = u_m1_r / np.real(u_m1_u)
