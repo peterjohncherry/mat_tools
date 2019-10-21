@@ -35,10 +35,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         self.nov = self.nvirt * self.nocc
         self.ndim = 2 * self.nov
-        self.cycle = 0
+        self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs(
-            seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/RS_FILES/4C/KEEPERS_FULL/1el_eigvals")
         self.get_esorted_general()
 
     def solve(self):
@@ -76,7 +75,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for iev in range(self.nev):
                 # if self.skip[iev]:
                 #     continue
-                if it < self.nev:
+                if self.cycle == 1:
                     t_vec = self.u_vecs[:, iev]
                 else:
                     t_vec = self.get_new_tvec(iev)
@@ -92,7 +91,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 #            utils.zero_small_parts(submat)
             utils.print_nonzero_numpy_elems(submat, arr_name="submat", thresh=1e-6)
 
-            np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat" + str(it) + ".txt", submat)
+            np.savetxt('/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/submat' + str(it) + '.txt', submat)
 
             self.get_residual_vectors(submat)
 
@@ -155,7 +154,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, -1])]
 
             # just to test, remove later
-            self.zero_check_and_save_lh(it)
+            self.zero_check_and_save_lh()
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
@@ -212,7 +211,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
         for iev in range(self.nev):
             vi = 0
-            for vs in [self.vspace_r, self.vspace_l,self.vspace_rp, self.vspace_lp]:
+            for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
                 if vs is not None:
                     for ii in range(vs.shape[1]):
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + hevecs[ii+vi, iev] * vs[:, ii]
@@ -244,7 +243,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         print("dnorm = ", dnorm)
         self.teta = ritz_vals[:self.nev]
-
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
@@ -410,10 +408,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_r.shape[1]):
             utils.save_arrs_to_file([self.vspace_r[:, it], self.vspace_rp[:, it], self.wspace_r[:, it],
                                      self.wspace_rp[:, it]],
-                                    ["vspace_r" + str(it), "vspace_rp" + str(it), "wspace_r" + str(it),
+                                    ["vspace_r" + str(it)+"r", "vspace_" + str(it) + "rp",   "wspace_r" + str(it),
                                      "wspace_rp" + str(it)])
 
-    def zero_check_and_save_lh(self, it):
+    def zero_check_and_save_lh(self):
         utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
                              ["vspace_l", "vspace_lp", "wspace_l", "wspace_lp"])
         utils.zero_small_parts(self.vspace_l)
@@ -423,8 +421,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_l.shape[1]):
             utils.save_arrs_to_file([self.vspace_l[:, ii], self.vspace_lp[:, ii], self.wspace_l[:, ii],
                                      self.wspace_lp[:, ii]],
-                                    ["vspace_l" + str(ii), "vspace_lp" + str(ii), "wspace_l" + str(ii),
-                                     "wspace_lp" + str(ii)])
+                                    ["vspace_" + str(ii) + "l", "vspace_" + str(ii)+"lp", "wspace_" + str(ii) + "l",
+                                     "wspace_" + str(ii) + "lp:w"])
 
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)

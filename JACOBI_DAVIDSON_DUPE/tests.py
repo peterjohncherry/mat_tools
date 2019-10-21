@@ -25,8 +25,7 @@ def test_jacobi_davidson_tda_4c():
     nevals = 3
     jd_test = jdr4c.JacobiDavidsonTDA4C(num_eigenvalues=nevals,
                                         rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/4c-HF.out_scf")
-    jd_test.initialize()
-    jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/TDA/RS_FILES/KEEPERS/full_mat")
+    jd_test.read_full_matrix(file_seedname="/home/peter/RS_FILES/4C/KEEPERS_TDA/full_mat")
     jd_test.solve()
 
 
@@ -53,5 +52,3 @@ def test_v1_v2_orthogonalization():
     new_v1, angle = utils.orthogonalize_v1_against_v2(v1, v2)
     print("new_v1 = ", new_v1)
     print("angle = ", np.degrees(np.arcsin(angle)))
-
-

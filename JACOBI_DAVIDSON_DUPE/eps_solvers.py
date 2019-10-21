@@ -136,3 +136,4 @@ class Solver:
             self.evals_1e = evals_1e_all[num_pos_evals:]
 
         np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
+        self.eindex = np.argsort(self.evals_1e)
