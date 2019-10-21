@@ -60,7 +60,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def main_loop(self):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
-
         it = 0
 
         while it <= 10:

@@ -115,23 +115,13 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
                 it = it+1
 
-            for iev in range(self.vspace.shape[1]):
-                utils.zero_small_parts(self.vspace)
-                utils.zero_small_parts(self.wspace)
-                np.savetxt("v_"+str(iev)+".txt", self.vspace[:, iev])
-                np.savetxt("w_"+str(iev)+".txt", self.wspace[:, iev])
-
             self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
-            np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
             ritz_vals, hdiag = la.eig(self.submat)
 
             # sort eigenvalues and eigenvectors
             ev_idxs = ritz_vals.argsort()
             ritz_vals = ritz_vals[ev_idxs]
             hdiag = hdiag[:, ev_idxs]
-
-            np.savetxt("teta_" + str(it), ritz_vals, fmt='%.4f')  # TESTING
-            np.savetxt("hdiag_" + str(it), hdiag, fmt='%.4f')  # TESTING
 
             # u_{i} = h_{ij}*v_{i},            --> eigenvectors of submat represented in vspace
             # \hat{u}_{i} = h_{ij}*w_{i},    --> eigenvectors of submat represented in wspace
@@ -144,7 +134,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
             self.teta = ritz_vals
             for ii in range(self.nev):
-                print("self.threshold = ", self.threshold)
                 if self.dnorm[ii] <= self.threshold:
                     skip[ii] = True
                 else:
@@ -165,7 +154,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
-        print("teta["+str(iev)+"] = ", teta_iev)
 
         idx = 0
         for ii in range(self.nocc):
@@ -185,7 +173,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
             factor = u_m1_r / u_m1_u
-            print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
+            # print("uMinvr = ", u_m1_r, "uMinvu = ", u_m1_u, "factor = ", factor)
             self.t_vec = factor*v2-v1
         else:
             self.t_vec = -v1
@@ -193,53 +181,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
     # Extend w space by doing H*t
     def sigma_constructor(self):
         return np.matmul(self.mat_orig, self.t_vec)
-
-    def tv_orth_check(self):
-        for ii in range(self.vspace.shape[1]):
-            vtoverlap = np.vdot(self.t_vec, self.vspace[:, ii])
-            if abs(vtoverlap) > 1e-10:
-                print("np.vdot(self.t_vec, self.vspace[:," + str(ii) + "]) = ",
-                      np.vdot(self.t_vec, self.vspace[:, ii]), end=' ')
-                print("   ||t_vec[" + str(iter) + "]|| =", la.norm(self.t_vec))
-
-    # Sorting by size of residual
-    def sort_by_rnorm(self):
-        for it in range(len(self.wspace)):
-            self.submat = np.matmul(np.conjugate(self.wspace.T), self.vspace)
-            np.savetxt("submat_" + str(it), self.submat, fmt='%.4f')  # TESTING
-            ritz_vals, hdiag = la.eig(self.submat)
-
-            np.savetxt("teta_" + str(it), ritz_vals, fmt='%.4f')  # TESTING
-            np.savetxt("hdiag_" + str(it), hdiag, fmt='%.4f')  # TESTING
-
-            # Calculate Ritz vectors with the lowest residual norms and put them into u
-            tmp_dnorm = self.dnorm
-            if it > self.nev:
-                for iteta in range(it):
-                    tmp_u_vec = np.matmul(self.vspace, hdiag[:, iteta])
-                    tmp_u_hat = np.matmul(self.wspace, hdiag[:, iteta])
-                    tmp_r_vec = tmp_u_hat - ritz_vals[iteta] * tmp_u_vec
-                    tmp_r_norm = la.norm(tmp_r_vec)
-
-                    if iteta < self.nev:
-                        self.u_vecs[:, iteta] = tmp_u_vec
-                        self.u_hats[:, iteta] = tmp_u_hat
-                        self.r_vecs[:, iteta] = tmp_r_vec
-                        self.teta[iteta] = ritz_vals[iteta]
-                    else:
-                        # If new Ritz vector has low residual norm, replace existing Ritz vector with max residual norm
-                        max_norm_loc = np.argmax(tmp_dnorm)
-                        self.u_vecs[:, max_norm_loc] = tmp_u_vec
-                        self.u_hats[:, max_norm_loc] = tmp_u_hat
-                        self.r_vecs[:, max_norm_loc] = tmp_r_vec
-                        self.dnorm[max_norm_loc] = tmp_r_norm
-                        tmp_dnorm[max_norm_loc] = tmp_r_norm
-
-                rsorted_idxs = self.dnorm.argsort()[::-1]
-                self.u_vecs = self.u_vecs[:, rsorted_idxs]
-                self.u_hats = self.u_hats[:, rsorted_idxs]
-                self.r_vecs = self.r_vecs[:, rsorted_idxs]
-                self.dnorm = self.dnorm[rsorted_idxs]
 
     def print_guess_arrays(self):
         utils.zero_small_parts(self.u_hats)
