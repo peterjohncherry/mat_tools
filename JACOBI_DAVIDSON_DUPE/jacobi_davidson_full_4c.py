@@ -135,6 +135,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # Get coefficients for symmetrization
         d1, d2 = self.orthonormalize_pair(t_vec)
 
+
         # Build symmetrized t_vec using coeffs, and extend vspace and wspace
         if self.vspace_r is None:
             self.vspace_r = np.ndarray((self.ndim, 1), np.complex64)
@@ -153,6 +154,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.vspace_rp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, it])]
             self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, it])]
             self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, it])]
+
+        self.zero_check_and_save_rh()
 
     def extend_left_handed_spaces(self, it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
@@ -178,6 +181,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, -1])]
                 self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, -1])]
 
+            self.zero_check_and_save_lh()
+
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
         sb_dim = 0
@@ -186,9 +191,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 sb_dim = sb_dim + vs.shape[1]
         submat = np.zeros((sb_dim, sb_dim), np.complex64)
 
-        for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
-            if vs is not None:
-                vs.shape
+        if self.vspace_r is not None:
+            print("self.vspace_r.shape = ", self.vspace_r.shape)
+        if self.vspace_l is not None:
+            print("self.vspace_l.shape = ", self.vspace_l.shape)
+        if self.vspace_rp is not None:
+            print("self.vspace_rp.shape = ", self.vspace_rp.shape)
+        if self.vspace_lp is not None:
+            print("self.vspace_lp.shape = ", self.vspace_lp.shape)
+
+        print ("sb_dim = " , sb_dim)
 
         vi = 0
         for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
@@ -238,6 +250,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     for ii in range(vs.shape[1]):
                         self.u_vecs[:, iev] = self.u_vecs[:, iev] + ritz_vecs[ii+vi, iev] * vs[:, ii]
                     vi = vi + vs.shape[1]
+
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
         dnorm = np.zeros(self.nev, np.complex64)
@@ -315,9 +328,20 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def orthonormalize_pair(self, vec):
         d1 = 0.0
         d2 = 0.0
-        z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
+        z = 0.0+0.0j
+        nh = int(self.ndim/2)
+        for ii in range(nh):
+            z = z + vec[ii] * vec[ii+nh]
+
+
+        #z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
         d = np.real(z * np.conj(z))
         r = 1.0 - 4.0 * d
+        print("determining t_vec coefficients")
+        print("z = ", z)
+        print("r = ", r)
+        print("d = ", d)
+
 
         if r >= 1e-12:
             if np.abs(d) > 1e-30:
@@ -333,6 +357,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         else:
             print("WARNING!, small r in orthonormalize pair routine")
 
+        print("d1, d2 = ", d1, d2)
         return d1, d2
 
     def get_new_tvec(self, iev):
@@ -383,7 +408,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)
 
-    def zero_check_and_save_rh(self, it):
+    def zero_check_and_save_rh(self):
         utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
                              ["vspace_r", "vspace_rp", "wspace_r", "wspace_rp"])
         utils.zero_small_parts(self.vspace_r)
@@ -391,10 +416,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         utils.zero_small_parts(self.vspace_rp)
         utils.zero_small_parts(self.wspace_rp)
         for ii in range(self.vspace_r.shape[1]):
-            utils.save_arrs_to_file([self.vspace_r[:, it], self.vspace_rp[:, it], self.wspace_r[:, it],
-                                     self.wspace_rp[:, it]],
-                                    ["vspace_r" + str(it)+"r", "vspace_" + str(it) + "rp",   "wspace_r" + str(it),
-                                     "wspace_rp" + str(it)])
+            utils.save_arrs_to_file([self.vspace_r[:, ii], self.vspace_rp[:, ii], self.wspace_r[:, ii],
+                                     self.wspace_rp[:, ii]],
+                                    ["vspace_r_" + str(ii+1), "vspace_rp_" + str(ii+1),   "wspace_r_" + str(ii+1),
+                                     "wspace_rp_" + str(ii+1)])
 
     def zero_check_and_save_lh(self):
         utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
@@ -406,8 +431,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_l.shape[1]):
             utils.save_arrs_to_file([self.vspace_l[:, ii], self.vspace_lp[:, ii], self.wspace_l[:, ii],
                                      self.wspace_lp[:, ii]],
-                                    ["vspace_" + str(ii) + "l", "vspace_" + str(ii)+"lp", "wspace_" + str(ii) + "l",
-                                     "wspace_" + str(ii) + "lp:w"])
+                                    ["vspace_l_" + str(ii+1), "vspace_lp_" + str(ii+1), "wspace_l_" + str(ii+1),
+                                     "wspace_lp_" + str(ii+1)])
 
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)
