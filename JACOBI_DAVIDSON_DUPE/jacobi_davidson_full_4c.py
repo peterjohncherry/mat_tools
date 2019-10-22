@@ -91,13 +91,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             if it > 50:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
-            #if self.cycle > 2:
-            #    sys.exit("got to cycle 3, exit")
+            if self.cycle > 2:
+                sys.exit("got to cycle 3, exit")
+
             for iev in range(self.nev):
                 if self.cycle == 1:
                     t_vec = self.u_vecs[:, iev]
                 else:
                     t_vec = self.get_new_tvec(iev)
+
+                utils.zero_small_parts(t_vec, thresh=1e-10)
+                np.savetxt("t_vec_c"+str(self.cycle)+"_i"+str(iev+1)+".txt", t_vec)
 
                 self.extend_right_handed_spaces(t_vec, it)
                 self.extend_left_handed_spaces(it)
@@ -105,7 +109,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-            np.savetxt("submat"+str(it)+".txt", submat)
             dnorm = self.get_residual_vectors(submat)
 
             skip = np.ndarray(self.nev, np.bool)
@@ -122,7 +125,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             else:
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
                 sys.exit("Converged!!")
-
 
             self.cycle = self.cycle + 1
 
@@ -184,6 +186,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 sb_dim = sb_dim + vs.shape[1]
         submat = np.zeros((sb_dim, sb_dim), np.complex64)
 
+        for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
+            if vs is not None:
+                vs.shape
+
         vi = 0
         for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
             if vs is not None:
@@ -207,6 +213,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
+        np.savetxt("submat" + str(submat.shape[0]) + ".txt", np.real(submat))
         ritz_vals, ritz_vecs = np.linalg.eig(submat)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
@@ -216,8 +223,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
+        print("ritz_vals orig = ", np.real(ritz_vals))
         ritz_vals = ritz_vals[idx]
         ritz_vecs = ritz_vecs[:, idx]
+        print("idx = ",  idx)
+        print("ritz_vals sorted = ", np.real(ritz_vals))
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), np.complex64)
