@@ -83,15 +83,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # v_space[:,0:maxs2] are original vectors, v_space[:,maxs2:maxs] are symmetric pairs
         # v_space[:, ii ] are right eigvecs if i is odd, and left eigenvectors if ii is even
         it = 0
-        while it <= 50:
+        while it <= 1000:
             print("\n\n=====================================================")
             print("cycle = ", self.cycle, "it = ", it)
             print("=====================================================")
-            if it > self.maxs:
+            #if it > self.maxs:
+            if it > 50:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
-            if self.cycle > 2:
-                sys.exit("got to cycle 3, exit")
+            #if self.cycle > 2:
+            #    sys.exit("got to cycle 3, exit")
             for iev in range(self.nev):
                 if self.cycle == 1:
                     t_vec = self.u_vecs[:, iev]
@@ -104,7 +105,24 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-            self.get_residual_vectors(submat)
+            np.savetxt("submat"+str(it)+".txt", submat)
+            dnorm = self.get_residual_vectors(submat)
+
+            skip = np.ndarray(self.nev, np.bool)
+            for ii in range(self.nev):
+                if dnorm[ii] <= self.threshold:
+                    skip[ii] = True
+                else:
+                    skip[ii] = False
+
+            print("self.teta = ", self.teta)
+            if False in skip[:self.nev]:
+                print("Not converged on iteration ", it)
+                print("dnorm = ", dnorm, "skip = ", skip)
+            else:
+                print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
+                sys.exit("Converged!!")
+
 
             self.cycle = self.cycle + 1
 
@@ -229,6 +247,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         print("dnorm = ", dnorm)
         self.teta = ritz_vals[:self.nev]
+        return dnorm
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
@@ -339,8 +358,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 idx += 1
 
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
+        print("u_m1_u = ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
+            print("u_m1_r = ", u_m1_r)
             factor = u_m1_r / np.real(u_m1_u)
             return factor*v2-v1
         else:
