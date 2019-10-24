@@ -5,47 +5,37 @@ import sys
 
 class Solver:
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
+    def __init__(self, rs_filename, num_eigenvalues, threshold=1e-4, maxdim_subspace=6,
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
 
-        self.rs_filename = rs_filename
+        # Solver parameters
         self.nev = num_eigenvalues  # number of eigenvalues to solve for
+        self.pe_rot = pe_rot  # Allow rotations between +ive and -ive energy virtual orbitals
+        self.symmetry = symmetry  # Symmetry to be used when constructing guess
         self.threshold = threshold  # convergence threshold for solver
         self.solver = solver  # Solver type
-        self.solver_type = self.solver
         self.method = method  # approximation for preconditioning
+        self.complex_precision = np.complex128  # precision for internal arrays
+        self.real_precision = np.float64        # precision for internal arrays
 
-        self.pe_rot = pe_rot  # Rotations between positive and negative energy virtual orbitals
-        self.restart = restart  # True if restarting from previous cycle
-        self.symmetry = symmetry
-        self.P0_tsymm = self.symmetry
+        # Information to be read in from ReSpect SCF output
+        self.rs_filename = rs_filename  # seedname for ReSpect SCF files
+        self.evals_1e = None  # 1-electron eigenvalues
+        self.mat_orig = None  # Matrix whose eigenvectors we seek
+        self.esorted = None   # Sorted evals_1e
+        self.eindex = None    # indexes used to sort evals_1e; needed for guess construction
+        self.ndims = -1  # number of spherical GTOs
+        self.ndimc = -1  # number of Cartesian GTOs
+        self.nocc = -1   # number of occupied orbitals
+        self.nvirt = -1  # number of virtual orbitals
+        self.ndim = -1   # length of ritz_vector
+        self.nov = None  # nov = nocc*nvirt = ndim(in TDA) = ndim/2 (in FULL)
 
-        # Solver specific variables, not set here
-        self.submat = None
-        self.teta = None
-        self.t_vec = None
-
-        self.dnorm = None
-        self.skip = None
-        self.nov = None
-
-        # Guess space arrays
+        # Internal arrays to be used in solver
         self.u_vecs = None
         self.r_vecs = None
-        self.u_hats = None
-
-        # Ritz value arrays
-        self.evals_1e = None
-        self.eindex = None
-
-        self.ndims = -1
-        self.ndimc = -1
-        self.nocc = -1
-        self.nvirt = -1
-
-        self.mat_orig = None
-        self.ndim = None
-        self.esorted = None
+        self.submat = None
+        self.teta = None
 
         self.get_basis_info(rs_filename)
 
@@ -104,11 +94,6 @@ class Solver:
         print("ndim = ", self.ndim)
         print("self.mat_orig.shape = ", self.mat_orig.shape, "\n")
         np.savetxt(file_seedname+"_py", self.mat_orig, fmt='%10.5f')
-
-    # gets energy differences
-    # if symmetry is involved, then will get sorted eigvals in sets of 4
-    def evalai(self, occ_orb, virt_orb):
-        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints

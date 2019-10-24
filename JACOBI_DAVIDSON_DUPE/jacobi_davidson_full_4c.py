@@ -7,9 +7,9 @@ import matrix_utils as utils
 
 class JacobiDavidsonFull4C(eps_solvers.Solver):
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
+    def __init__(self, rs_filename, num_eigenvalues, threshold=1e-4, maxdim_subspace=6,
                  solver="Jacobi_Davidson", method="Full", symmetry="general", pe_rot=False):
-        super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
+        super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
 
         # Guess space arrays - original right-handed guesses
@@ -44,16 +44,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         evals_1e_all = mr.read_fortran_array(seedname)
         num_pos_evals = self.nvirt + self.nocc
         if self.pe_rot:
-            self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
+            self.evals_1e = np.zeros(2*num_pos_evals, dtype=self.real_precision)
             self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
             self.evals_1e[num_pos_evals:] = evals_1e_all[:num_pos_evals]
         else:
-            self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
+            self.evals_1e = np.zeros(num_pos_evals, dtype=self.real_precision)
             self.evals_1e = evals_1e_all[num_pos_evals:]
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
-        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=self.real_precision)
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
                 self.esorted[ii, jj] = self.evalai(ii, jj)
@@ -67,17 +67,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.main_loop()
 
     def initialize_first_iteration(self, symmetry: object = 'general'):
-        self.u_vecs = np.zeros((self.ndim, self.nev), np.complex128)
+        self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
         for iev in range(self.nev):
             self.u_vecs[:self.nov, iev] = self.construct_guess(iev, symmetry)
 
         # for convergence checking
         self.skip = np.full(self.nev, False)
-        self.dnorm = np.zeros(self.nev, dtype=np.float32)
-        self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=np.complex128)
+        self.dnorm = np.zeros(self.nev, dtype=self.real_precision)
+        self.r_vecs = np.zeros((self.ndim, 2*self.nev), dtype=self.complex_precision)
 
         # Subspace Hamiltonian
-        self.teta = np.zeros(self.nev, dtype=np.complex128)
+        self.teta = np.zeros(self.nev, dtype=self.complex_precision)
 
     def main_loop(self):
         np.set_printoptions(precision=16)
@@ -139,16 +139,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         # Build symmetrized t_vec using coeffs, and extend vspace and wspace
         if self.vspace_r is None:
-            self.vspace_r = np.ndarray((self.ndim, 1), np.complex128)
+            self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
             self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
 
-            self.wspace_r = np.ndarray((self.ndim, 1), np.complex128)
+            self.wspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
             self.wspace_r[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
 
-            self.vspace_rp = np.ndarray((self.ndim, 1), np.complex128)
+            self.vspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
             self.vspace_rp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
 
-            self.wspace_rp = np.ndarray((self.ndim, 1), np.complex128)
+            self.wspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
             self.wspace_rp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
         else:
             self.vspace_r = np.c_[self.vspace_r, (d1 * t_vec + d2 * t_vec_pair)]
@@ -165,16 +165,16 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, it])
         if good_t_vec:
             if self.vspace_l is None:
-                self.vspace_l = np.ndarray((self.ndim, 1), np.complex128)
+                self.vspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
                 self.vspace_l[:, 0] = t_vec_l
 
-                self.wspace_l = np.ndarray((self.ndim, 1), np.complex128)
+                self.wspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
                 self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
 
-                self.vspace_lp = np.ndarray((self.ndim, 1), np.complex128)
+                self.vspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
                 self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
 
-                self.wspace_lp = np.ndarray((self.ndim, 1), np.complex128)
+                self.wspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
                 self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
             else:
                 self.vspace_l = np.c_[self.vspace_l, t_vec_l]
@@ -190,7 +190,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
             if vs is not None:
                 sb_dim = sb_dim + vs.shape[1]
-        submat = np.zeros((sb_dim, sb_dim), np.complex128)
+        submat = np.zeros((sb_dim, sb_dim), self.complex_precision)
 
         if self.vspace_r is not None:
             print("self.vspace_r.shape = ", self.vspace_r.shape)
@@ -243,7 +243,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         print("ritz_vals sorted = ", ritz_vals)
 
         # Construction of Ritz vectors from eigenvectors
-        self.u_vecs = np.zeros((self.ndim, self.nev), np.complex128)
+        self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
         for iev in range(self.nev):
             vi = 0
             for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
@@ -254,11 +254,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
 
         # Construction of u_hat from Ritz_vectors and w_spaces,
-        dnorm = np.zeros(self.nev, np.complex64)
-        self.r_vecs = np.zeros((self.ndim, self.nev), np.complex128)
+        dnorm = np.zeros(self.nev, self.complex_precision)
+        self.r_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
         for iev in range(self.nev):
             wj = 0
-            u_hat = np.zeros(self.ndim, np.complex64)
+            u_hat = np.zeros(self.ndim, self.complex_precision)
             for ws in [self.wspace_r, self.wspace_l, self.wspace_rp, self.wspace_lp]:
                 if ws is not None:
                     for jj in range(ws.shape[1]):
@@ -275,7 +275,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     # Construct initial guess
     def construct_guess(self, iguess, symmetry_type):
-        guess = np.zeros(self.nov, dtype=np.complex128)
+        guess = np.zeros(self.nov, dtype=self.complex_precision)
 
         if symmetry_type == 'general':
             guess[self.eindex[iguess]] = 1.0 + 0.0j
@@ -311,7 +311,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     # x :  [X,Y] --> [ Y*, X* ]
     # Ax : [X,Y] --> [ -Y*, -X* ]
     def get_pair(self, pair_type, vec_in):
-        vec_out = np.empty(self.ndim, dtype=np.complex128)
+        vec_out = np.empty(self.ndim, dtype=self.complex_precision)
         n2 = int(self.ndim/2)
         if pair_type == 'x':
             vec_out[n2:] = np.conj(vec_in[:n2])
@@ -360,8 +360,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         return d1, d2
 
     def get_new_tvec(self, iev):
-        v1 = np.ndarray(self.ndim, np.complex128)  # v1 = M^{-1}*r
-        v2 = np.ndarray(self.ndim, np.complex128)  # v2 = M^{-1}*u
+        v1 = np.ndarray(self.ndim, self.complex_precision)  # v1 = M^{-1}*r
+        v2 = np.ndarray(self.ndim, self.complex_precision)  # v2 = M^{-1}*u
         idx = 0
         # First half of vector
         for ii in range(self.nocc):

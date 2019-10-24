@@ -6,12 +6,10 @@ import matrix_utils as utils
 
 
 class JacobiDavidsonTDA4C(eps_solvers.Solver):
-    np.set_printoptions(precision=4)
 
-    def __init__(self, rs_filename, num_eigenvalues, restart=False, threshold=1e-4, maxdim_subspace=6,
+    def __init__(self, rs_filename, num_eigenvalues, threshold=1e-4, maxdim_subspace=6,
                  solver="Jacobi_Davidson", method="TDA", symmetry="general", pe_rot=False):
-        super().__init__(rs_filename, num_eigenvalues, restart, threshold, maxdim_subspace, solver, method, symmetry,
-                         pe_rot)
+        super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry, pe_rot)
         # Guess space arrays
         self.vspace = None
         self.wspace = None
@@ -19,10 +17,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
     def solve(self):
         self.initialize_first_iteration()
         self.main_loop()
-
-    # gets energy differences
-    def evalai(self, occ_orb, virt_orb):
-        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     def initialize_first_iteration(self):
         # This initialization is not really needed in python, but keep for consistency with F95 code until it is working
@@ -44,7 +38,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
     def get_esorted_general(self):
         # Build sorted list of eigval differences without imposing any symmetry constraints
-        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=np.float64)
+        self.esorted = np.ndarray((self.nocc, self.nvirt), dtype=self.real_precision)
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
                 self.esorted[ii, jj] = self.evalai(ii, jj)
@@ -54,12 +48,11 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.esorted = self.esorted[self.eindex]
 
     def set_arrays(self):
-        self.teta = np.zeros(self.nev, dtype=np.float64)
-        self.skip = np.full(self.nev, False, dtype=np.bool)
+        self.teta = np.zeros(self.nev, dtype=self.real_precision)
         self.nov = self.nocc * self.nvirt  # Dimension of guess vectors, one for each possible (E_a-E_i)^{-1}
 
         # Guess space arrays
-        self.u_vecs = np.zeros((self.ndim, self.nev), dtype=np.complex64)   # Ritz vectors
+        self.u_vecs = np.zeros((self.ndim, self.nev), dtype=self.complex_precision)   # Ritz vectors
         self.vspace = np.zeros_like(self.u_vecs)                            # trial vectors
         self.wspace = np.zeros_like(self.u_vecs)                            # H*v
         self.r_vecs = np.zeros_like(self.u_vecs)                            # residual vectors
@@ -70,7 +63,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
     # iguess : index of the eigenvector being built
     def tddft4_driver_guess(self, iev):
-        guess = np.zeros(self.ndim, dtype=np.complex64)
+        guess = np.zeros(self.ndim, dtype=self.complex_precision)
         guess[self.eindex[iev]] = 1.0+0.0j
         return guess
 
@@ -151,8 +144,8 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
     # t = x.M^{-1}.u_{k} - u_{k}
     # x = ( u*_{k}.M^{-1}r_{k} ] / ( u*_{k}.M^{-1}.u_{k} ) = e/c
     def get_new_tvec(self, iev):
-        v1 = np.ndarray(self.nov, np.complex64)  # v1 = M^{-1}*r
-        v2 = np.ndarray(self.nov, np.complex64)  # v2 = M^{-1}*u
+        v1 = np.ndarray(self.nov, self.complex_precision)  # v1 = M^{-1}*r
+        v2 = np.ndarray(self.nov, self.complex_precision)  # v2 = M^{-1}*u
         teta_iev = self.teta[iev]
 
         idx = 0
@@ -176,6 +169,10 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
             return factor*v2-v1
         else:
             return -v1
+
+    # gets energy differences
+    def evalai(self, occ_orb, virt_orb):
+        return self.evals_1e[self.nocc+virt_orb] - self.evals_1e[occ_orb]
 
     # Extend w space by doing H*t
     def sigma_constructor(self, t_vec):
