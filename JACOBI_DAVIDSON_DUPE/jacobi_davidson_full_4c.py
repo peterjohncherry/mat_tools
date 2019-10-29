@@ -94,7 +94,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for iev in range(self.nev):
                 self.iev = iev
                 self.extend_right_handed_spaces(iev)
-                self.extend_left_handed_spaces(iev)
+                if self.cycle > 1:
+                    self.extend_left_handed_spaces(iev)
                 it = it + 1
 
             # Build subspace matrix : v*Av = v*w
@@ -126,10 +127,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec = self.get_new_tvec(iev)
             np.savetxt("t_vec_preorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
             for ii in range(self.vspace_r.shape[1]):
-                t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
-                if not good_t_vec:
-                    sys.exit("Cannot orthonormalize new t_vec with vspace_r! Aborting! \n"
-                             "you must at least able to extend the right hand space by 1 vector")
+                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:,ii])
+
+                #   t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
+                good_t_vec = True
+            #   if not good_t_vec:
+            #       sys.exit("Cannot orthonormalize new t_vec with vspace_r! Aborting! \n"
+            #                "you must at least able to extend the right hand space by 1 vector")
 
             #if self.vspace_rp is not None:
                 #for ii in range(self.vspace_rp.shape[1]):
@@ -139,6 +143,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 #                 "you must at least able to extend the right hand space by 1 vector")
         np.savetxt("t_vec_postorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
 
+        t_vec = t_vec/np.linalg.norm(t_vec)
         # Get coefficients for symmetrization
         d1, d2 = self.orthonormalize_pair(t_vec)
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
@@ -166,11 +171,20 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         self.zero_check_and_save_rh()
 
-    def extend_left_handed_spaces(self, it):
+    def extend_left_handed_spaces(self,it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, -1])
-        t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, -1])
+    #    t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, -1])
+        for ii in range(self.vspace_r.shape[1]):
+            t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
+
+        t_vec_l_norm = np.linalg.norm(t_vec_l)
+        if t_vec_l_norm < 1e-8:
+            good_t_vec = False
+        else :
+            t_vec_l  = t_vec_l / t_vec_l_norm
+            good_t_vec = True
 
         np.savetxt("t_vec_lp_c" + str(self.cycle) + "_i", t_vec_l)
 
