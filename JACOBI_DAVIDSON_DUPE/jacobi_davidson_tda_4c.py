@@ -86,6 +86,8 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                 else:
                     t_vec = self.get_new_tvec(iev)
 
+                np.savetxt("t_vec_"+str(it+1), t_vec)
+
                 # Orthogonalize t_vec w.r.t. trial space, print warning if orthogonalization seems dubious
                 t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(t_vec, self.vspace)
                 if vt_angle < 1e-8:
@@ -179,10 +181,8 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         return np.matmul(self.mat_orig, t_vec)
 
     def print_guess_arrays(self):
-        utils.zero_small_parts(self.u_hats)
         utils.zero_small_parts(self.u_vecs)
         utils.zero_small_parts(self.r_vecs)
         for iev in range(self.u_vecs.shape[1]):
             np.savetxt("u_" + str(iev) + ".txt", self.u_vecs[:, iev])
-            np.savetxt("U_" + str(iev) + ".txt", self.u_hats[:, iev])
             np.savetxt("r_" + str(iev) + ".txt", self.r_vecs[:, iev])

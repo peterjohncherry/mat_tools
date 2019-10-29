@@ -100,7 +100,7 @@ def orthogonalize_v1_against_v2(v1, v2, arctan_norm_angle_thresh=1e-8, norm_thre
                       "||v1-v2|| < " + str(norm_thresh))
                 return vnew, successful_norm
             else:
-                return vnew, (np.linalg.norm(vnew) / v1_norm_orig > arctan_norm_angle_thresh)
+                return vnew, ((np.linalg.norm(vnew)/v1_norm_orig) > arctan_norm_angle_thresh)
         else:
             exit("normalization of v2 failed")
             return v1, False
