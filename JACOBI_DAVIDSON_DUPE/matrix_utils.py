@@ -210,3 +210,8 @@ def check_for_nans(arr_list, name_list, exit_on_nan=True):
 def save_arrs_to_file(arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/"):
     for ii in range(len(arr_list)):
         np.savetxt(parent_folder+arr_names[ii] + ".txt", arr_list[ii])
+
+
+def rs_self__orthogonalize(vio, vec, n):
+    d = np.vdot(n, vec, vio)
+    return vio - d*vec

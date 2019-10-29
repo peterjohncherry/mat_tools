@@ -125,11 +125,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         else:
             t_vec = self.get_new_tvec(iev)
             np.savetxt("t_vec_preorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
-            #for ii in range(self.vspace_r.shape[1]):
-            #    t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
-            #    if not good_t_vec:
-            #        sys.exit("Cannot orthonormalize new t_vec with vspace_r! Aborting! \n"
-            #                 "you must at least able to extend the right hand space by 1 vector")
+            for ii in range(self.vspace_r.shape[1]):
+                t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
+                if not good_t_vec:
+                    sys.exit("Cannot orthonormalize new t_vec with vspace_r! Aborting! \n"
+                             "you must at least able to extend the right hand space by 1 vector")
 
             #if self.vspace_rp is not None:
                 #for ii in range(self.vspace_rp.shape[1]):
@@ -355,9 +355,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         if r >= 1e-12:
             if np.abs(d) > 1e-30:
-                t = 0.0 + np.sqrt(r)
+                t = 1.0 + np.sqrt(r)
+
                 r1 = np.real(z)/np.sqrt(d)
                 r2 = np.imag(z)/np.sqrt(d)
+
                 d1 = -r1 * np.sqrt(0.5*t/r) + r2*np.sqrt(0.5*t/r)*1.0j
                 d2 = np.sqrt(2.0*d/(t*r)) + 0.0j
             else:
