@@ -376,6 +376,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 r1 = np.real(z)/np.sqrt(d)
                 r2 = np.imag(z)/np.sqrt(d)
 
+                print("r1 = ", r1)
+                print("r2 = ", r2)
+
                 d1 = -r1 * np.sqrt(0.5*t/r) + r2*np.sqrt(0.5*t/r)*1.0j
                 d2 = np.sqrt(2.0*d/(t*r)) + 0.0j
             else:
