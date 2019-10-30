@@ -3,6 +3,7 @@ import sys
 import eps_solvers
 import mat_reader as mr
 import matrix_utils as utils
+import decimal
 
 
 class JacobiDavidsonFull4C(eps_solvers.Solver):
@@ -12,6 +13,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
 
+        decimal.getcontext().prec = 32
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
         self.wspace_r = None
@@ -85,7 +87,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             print("=====================================================")
 
             # if it > self.maxs:
-            if it > 50:
+            if it > 40:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
             if self.cycle > 2:
@@ -263,10 +265,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
-        #print("ritz_vals orig = ", ritz_vals)
+        print("ritz_vals orig = ", ritz_vals)
         ritz_vals = ritz_vals[idx]
         ritz_vecs = ritz_vecs[:, idx]
-        #print("ritz_vals sorted = ", ritz_vals)
+        print("ritz_vals sorted = ", ritz_vals)
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
@@ -352,27 +354,31 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     # This restructures the input vector so that it's "pair" as constructed using get_pair
     # will also be orthogonal to the vector space
     def orthonormalize_pair(self, vec):
-        d1 = 0.0
-        d2 = 0.0
-        z = 0.0+0.0j
+        d1 = np.float64(0.0)
+        d2 = np.float64(0.0)
+        z = np.float64(0.0)+np.float64(0.0)*1j
         nh = int(self.ndim/2)
         np.savetxt("t_vec_op_i"+str(self.iev)+"_c"+str(self.cycle)+".txt", vec)
         for ii in range(nh):
             z = z + vec[ii] * vec[ii+nh]
 
         # z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
-        d = np.real(z * np.conj(z))
-        r = 1.0 - 4.0 * d
+        d = np.float64(z * np.conj(z))
+        r = np.float64(1.0 - 4.0 * d)
         print("determining t_vec coefficients")
         print("z = ", z)
         print("d = ", d)
         print("r = ", r)
 
         if r >= 1e-12:
-            if np.abs(d) > 1e-30:
+            if np.abs(d) > 1e-20:
                 t = 1.0 + np.sqrt(r)
                 print("t = ", t)
 
+
+                print("np.sqrt(d) = ", np.sqrt(d))
+                print("np.real(z) = ", np.real(z))
+                print("np.imag(z) = ", np.imag(z))
                 r1 = np.real(z)/np.sqrt(d)
                 r2 = np.imag(z)/np.sqrt(d)
 
