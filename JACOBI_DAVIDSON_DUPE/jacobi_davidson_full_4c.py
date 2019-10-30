@@ -148,6 +148,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         d1, d2 = self.orthonormalize_pair(t_vec)
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
+        np.savetxt("t_vec_pair_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
+        np.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", d1 * t_vec + d2 * t_vec_pair)
         print("\n")
 
         if self.vspace_r is None:
@@ -183,7 +185,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         if t_vec_l_norm < 1e-8:
             good_t_vec = False
         else :
-            t_vec_l  = t_vec_l / t_vec_l_norm
+            t_vec_l = t_vec_l / t_vec_l_norm
             good_t_vec = True
 
         np.savetxt("t_vec_lp_c" + str(self.cycle) + "_i", t_vec_l)
@@ -261,11 +263,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
-        print("ritz_vals orig = ", ritz_vals)
+        #print("ritz_vals orig = ", ritz_vals)
         ritz_vals = ritz_vals[idx]
         ritz_vecs = ritz_vecs[:, idx]
-        print("idx = ",  idx)
-        print("ritz_vals sorted = ", ritz_vals)
+        #print("ritz_vals sorted = ", ritz_vals)
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
