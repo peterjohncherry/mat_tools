@@ -371,7 +371,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         print("r = ", r)
 
         if r >= 1e-12:
-            if np.abs(d) > 1e-20:
+            if np.abs(d) > 1e-12:
                 t = 1.0 + np.sqrt(r)
                 print("t = ", t)
 
