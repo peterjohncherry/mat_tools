@@ -42,7 +42,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2 * self.nov
         self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/RS_FILES/4C/KEEPERS_FULL/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
         self.get_esorted_general()
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
@@ -119,7 +119,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 print("Not converged on iteration ", it)
                 print("dnorm = ", dnorm, "skip = ", skip)
             else:
-                print("Final eigenvalues = ", sp.real(self.teta[:self.nev]))
+                print("Final eigenvalues = ", self.real_precision(self.teta[:self.nev]))
                 sys.exit("Converged!!")
 
             self.cycle = self.cycle + 1
@@ -132,7 +132,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec = self.get_new_tvec(iev)
             sp.savetxt("t_vec_preorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
             for ii in range(self.vspace_r.shape[1]):
-                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:,ii])
+                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:, ii])
 
                 #   t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
                 good_t_vec = True
@@ -146,15 +146,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 #    if not good_t_vec:
                 #        sys.exit("Cannot orthonormalize new t_vec with vspace_rp! Aborting! \n"
                 #                 "you must at least able to extend the right hand space by 1 vector")
-        sp.savetxt("t_vec_postorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
 
         t_vec = t_vec/sp_la.norm(t_vec)
+        sp.savetxt("t_vec_postorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
+
         # Get coefficients for symmetrization
         d1, d2 = self.orthonormalize_pair(t_vec)
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
         sp.savetxt("t_vec_pair_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
-        sp.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", d1 * t_vec + d2 * t_vec_pair)
+        t_vec_final = d1 * t_vec + d2 * t_vec_pair
+        sp.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_final)
         print("\n")
 
         if self.vspace_r is None:
@@ -186,7 +188,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_r.shape[1]):
             t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
 
-        t_vec_l_norm = sp_la.norm(t_vec_l, )
+        t_vec_l_norm = sp_la.norm(t_vec_l)
         if t_vec_l_norm < 1e-8:
             good_t_vec = False
         else :
@@ -258,8 +260,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
-        sp.savetxt("submat" + str(submat.shape[0]) + ".txt", sp.real(submat))
-        ritz_vals, ritz_vecs = sp_la.eig(submat)
+        sp.savetxt("submat" + str(submat.shape[0]) + ".txt", self.real_precision(submat))
+        ritz_vals, ritz_vecs_l, ritz_vecs = sp_la.eig(submat, left=True)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
         # (eigenvalues in the spectrum are always in positive and negative pairs)
@@ -464,10 +466,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_r.shape[1]):
             utils.save_arrs_to_file([self.vspace_r[:, ii], self.vspace_rp[:, ii], self.wspace_r[:, ii],
                                      self.wspace_rp[:, ii]],
-                                    ["vspace_r_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "vspace_rp_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "wspace_r_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "wspace_rp_c" + str(self.cycle) + "_" + str(ii + 1)])
+                                    ["vspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "vspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "wspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "wspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1)])
 
     def zero_check_and_save_lh(self):
         utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
@@ -479,12 +481,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         for ii in range(self.vspace_l.shape[1]):
             utils.save_arrs_to_file([self.vspace_l[:, ii], self.vspace_lp[:, ii], self.wspace_l[:, ii],
                                      self.wspace_lp[:, ii]],
-                                    ["vspace_l_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "vspace_lp_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "wspace_l_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "wspace_lp_c" + str(self.cycle) + "_" + str(ii+1)])
+                                    ["vspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "vspace_lp_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "wspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "wspace_lp_c" + str(self.cycle) + "_i" + str(ii+1)])
 
     def get_numpy_evals(self):
-        evals, evecs = sp_la.eig(self.mat_orig)
+
+        evals, evecs_l, evecs = sp_la.eig(self.mat_orig, left=True)
         sp.set_printoptions(threshold=sys.maxsize)
         print("numpy evals =\n ", sorted(abs(sp.real(evals)), reverse=False))
