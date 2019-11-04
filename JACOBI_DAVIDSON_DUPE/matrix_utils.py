@@ -147,7 +147,7 @@ def remove_imag_part(complex_array):
     for ii in range(complex_array.shape[0]):
         for jj in range(complex_array.shape[1]):
             if abs(np.imag(complex_array[ii, jj])) < 1e-12:
-                complex_array[ii, jj] = np.real(complex_array[ii, jj]) + 0.0j
+                complex_array[ii, jj] = np.complex128(complex_array[ii, jj]) + 0.0j
 
 
 # crap, should be done with forvec

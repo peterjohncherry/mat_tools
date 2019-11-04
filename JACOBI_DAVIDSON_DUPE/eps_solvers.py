@@ -1,5 +1,6 @@
 import numpy as np
 import mat_reader as mr
+import scipy as sp
 import sys
 
 
@@ -49,11 +50,11 @@ class Solver:
                     break
 
     def numpy_test(self, print_eigvals=True, print_eigvecs=False):
-        eigvals, eigvecs = np.linalg.eig(self.mat_orig)
+        eigvals, eigvecs = sp.linalg.eig(self.mat_orig)
         eigvals = np.sort(eigvals)
 
         if print_eigvals:
-            print("numpy results = ", np.real(eigvals[:self.nev]))
+            print("numpy results = ", np.float64(eigvals[:self.nev]))
 
         if print_eigvecs:
             print("numpy results = ", eigvecs[:self.nev])

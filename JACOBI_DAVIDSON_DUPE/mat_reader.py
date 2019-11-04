@@ -7,17 +7,17 @@ import numpy as np
 from scipy.io import FortranFile
 
 
-def read_binary_fortran_file(name, datatype, dim0, dim1=1):
+def read_binary_fortran_file(name, datatype, dim0, dim1=1, real_precision=np.float64):
 
     if dim1 == 1:
         fmat = FortranFile(name, 'r')
-        input_array = fmat.read_reals(dtype=np.float64)
+        input_array = fmat.read_reals(dtype=real_precision)
         fmat.close()
 
     else:
         if datatype == "real":
             fmat = FortranFile(name, 'r')
-            input_array = fmat.read_reals(dtype=np.float64)
+            input_array = fmat.read_reals(dtype=real_precision)
             input_array = input_array.reshape((dim0, dim1)).transpose()
             fmat.close()
 
