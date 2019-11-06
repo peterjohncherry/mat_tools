@@ -39,7 +39,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2 * self.nov
         self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/RS_FILES/4C/KEEPERS_FULL/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
         self.get_esorted_general()
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
@@ -152,26 +152,29 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         t_vec_pair = self.get_pair('x', t_vec)
         np.savetxt("t_vec_pair_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
         np.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", d1 * t_vec + d2 * t_vec_pair)
+        t_vec = d1 * t_vec + d2 * t_vec_pair
+        t_vec_pair = self.get_pair('x', t_vec)
+
         print("\n")
 
         if self.vspace_r is None:
             self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.vspace_r[:, 0] = d1 * t_vec + d2 * t_vec_pair
+            self.vspace_r[:, 0] = t_vec
             self.wspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.wspace_r[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+            self.wspace_r[:, 0] = self.sigma_constructor(t_vec)
         else:
-            self.vspace_r = np.c_[self.vspace_r, (d1 * t_vec + d2 * t_vec_pair)]
-            self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(self.vspace_r[:, -1])]
+            self.vspace_r = np.c_[self.vspace_r, t_vec]
+            self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(t_vec)]
 
         # Build symmetrized t_vec using coeffs, and extend vspace and wspace
         if self.vspace_rp is None:
             self.vspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.vspace_rp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+            self.vspace_rp[:, 0] = t_vec_pair
             self.wspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.wspace_rp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+            self.wspace_rp[:, 0] = self.sigma_constructor(t_vec_pair)
         else:
-            self.vspace_rp = np.c_[self.vspace_rp, self.get_pair('x', self.vspace_r[:, -1])]
-            self.wspace_rp = np.c_[self.wspace_rp, self.get_pair('Ax', self.wspace_r[:, -1])]
+            self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
+            self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
 
         self.zero_check_and_save_rh()
 
