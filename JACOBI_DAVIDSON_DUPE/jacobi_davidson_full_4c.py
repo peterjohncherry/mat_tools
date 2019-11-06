@@ -151,10 +151,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
         t_vec_pair = self.get_pair('x', t_vec)
         np.savetxt("t_vec_pair_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
-        np.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", d1 * t_vec + d2 * t_vec_pair)
-        t_vec = d1 * t_vec + d2 * t_vec_pair
-        t_vec_pair = self.get_pair('x', t_vec)
 
+        t_vec = d1 * t_vec + d2 * t_vec_pair
+        np.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
+
+        t_vec_pair = self.get_pair('x', t_vec)
+        np.savetxt("t_vec_final_p_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
         print("\n")
 
         if self.vspace_r is None:
