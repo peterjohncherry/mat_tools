@@ -178,7 +178,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
             self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
 
-        self.zero_check_and_save_rh()
+        self.check_and_save_rh()
 
     def extend_left_handed_spaces(self,it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
@@ -203,20 +203,24 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.vspace_l[:, 0] = t_vec_l
 
                 self.wspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_r[:, 0])
+                self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_l[:, 0])
 
                 self.vspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_r[:, 0])
+                self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_l[:, 0])
 
                 self.wspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_r[:, 0])
+                self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_l[:, 0])
             else:
                 self.vspace_l = np.c_[self.vspace_l, t_vec_l]
                 self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, -1])]
                 self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, -1])]
                 self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, -1])]
 
-            self.zero_check_and_save_lh()
+            self.save_array_as_vectors(self.vspace_l, "vspace_l_c" + str(self.cycle))
+            self.save_array_as_vectors(self.vspace_lp, "vspace_lp_c" + str(self.cycle))
+            self.save_array_as_vectors(self.wspace_l, "wspace_l_c" + str(self.cycle))
+            self.save_array_as_vectors(self.wspace_lp, "wspace_lp_c" + str(self.cycle))
+            #self.zero_check_and_save_lh()
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
@@ -454,35 +458,34 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)
 
-    def zero_check_and_save_rh(self):
+    def check_and_save_rh(self):
         utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
                              ["vspace_r", "vspace_rp", "wspace_r", "wspace_rp"])
-        utils.zero_small_parts(self.vspace_r)
-        utils.zero_small_parts(self.wspace_r)
-        utils.zero_small_parts(self.vspace_rp)
-        utils.zero_small_parts(self.wspace_rp)
+
         for ii in range(self.vspace_r.shape[1]):
             utils.save_arrs_to_file([self.vspace_r[:, ii], self.vspace_rp[:, ii], self.wspace_r[:, ii],
                                      self.wspace_rp[:, ii]],
-                                    ["vspace_r_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "vspace_rp_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "wspace_r_c" + str(self.cycle) + "_" + str(ii + 1),
-                                     "wspace_rp_c" + str(self.cycle) + "_" + str(ii + 1)])
+                                    ["vspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "vspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "wspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
+                                     "wspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1)])
 
-    def zero_check_and_save_lh(self):
+    def check_and_save_lh(self):
         utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
                              ["vspace_l", "vspace_lp", "wspace_l", "wspace_lp"])
-        utils.zero_small_parts(self.vspace_l)
-        utils.zero_small_parts(self.wspace_l)
-        utils.zero_small_parts(self.vspace_lp)
-        utils.zero_small_parts(self.wspace_lp)
+
         for ii in range(self.vspace_l.shape[1]):
             utils.save_arrs_to_file([self.vspace_l[:, ii], self.vspace_lp[:, ii], self.wspace_l[:, ii],
                                      self.wspace_lp[:, ii]],
-                                    ["vspace_l_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "vspace_lp_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "wspace_l_c" + str(self.cycle) + "_" + str(ii+1),
-                                     "wspace_lp_c" + str(self.cycle) + "_" + str(ii+1)])
+                                    ["vspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "vspace_lp_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "wspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
+                                     "wspace_lp_c" + str(self.cycle) + "_i" + str(ii+1)])
+
+    @staticmethod
+    def save_array_as_vectors(my_arr, name):
+        for ii in range(my_arr.shape[1]):
+            np.savetxt(name+"_i"+str(ii), my_arr[:, ii])
 
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)
