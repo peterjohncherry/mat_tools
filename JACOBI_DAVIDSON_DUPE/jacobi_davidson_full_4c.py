@@ -87,11 +87,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             print("=====================================================")
 
             # if it > self.maxs:
-            if it > 40:
+            if it > 70:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
-            if self.cycle > 2:
-                sys.exit("got to cycle 3, exit")
+            max_cycle = 3
+            if self.cycle > max_cycle:
+                sys.exit("got to cycle " + str(max_cycle) + ", exit")
 
             for iev in range(self.nev):
                 self.iev = iev
@@ -127,75 +128,49 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec = self.u_vecs[:, iev]
         else:
             t_vec = self.get_new_tvec(iev)
-            np.savetxt("t_vec_preorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
+
             for ii in range(self.vspace_r.shape[1]):
                 t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:,ii])
 
-                #   t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_r[:, ii])
-                good_t_vec = True
-            #   if not good_t_vec:
-            #       sys.exit("Cannot orthonormalize new t_vec with vspace_r! Aborting! \n"
-            #                "you must at least able to extend the right hand space by 1 vector")
+        t_vec, good_t_vec = utils.rs_self_normalize(t_vec)
+        if good_t_vec:
+            # Get coefficients for symmetrization
+            d1, d2 = self.orthonormalize_pair(t_vec)
 
-            #if self.vspace_rp is not None:
-                #for ii in range(self.vspace_rp.shape[1]):
-                #    t_vec, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec, self.vspace_rp[:, ii])
-                #    if not good_t_vec:
-                #        sys.exit("Cannot orthonormalize new t_vec with vspace_rp! Aborting! \n"
-                #                 "you must at least able to extend the right hand space by 1 vector")
-        np.savetxt("t_vec_postorth_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
+            # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
+            t_vec_pair = self.get_pair('x', t_vec)
+            t_vec = d1 * t_vec + d2 * t_vec_pair
+            t_vec_pair = self.get_pair('x', t_vec)
 
-        t_vec = t_vec/np.linalg.norm(t_vec)
-        # Get coefficients for symmetrization
-        d1, d2 = self.orthonormalize_pair(t_vec)
-        # from t_vec = [Y, X]  get t_vec_pair = [ Y*, X* ]
-        t_vec_pair = self.get_pair('x', t_vec)
-        np.savetxt("t_vec_pair_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
+            if self.vspace_r is None:
+                self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
+                self.vspace_r[:, 0] = t_vec
+                self.wspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
+                self.wspace_r[:, 0] = self.sigma_constructor(t_vec)
+            else:
+                self.vspace_r = np.c_[self.vspace_r, t_vec]
+                self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(t_vec)]
 
-        t_vec = d1 * t_vec + d2 * t_vec_pair
-        np.savetxt("t_vec_final_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec)
-
-        t_vec_pair = self.get_pair('x', t_vec)
-        np.savetxt("t_vec_final_p_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", t_vec_pair)
-        print("\n")
-
-        if self.vspace_r is None:
-            self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.vspace_r[:, 0] = t_vec
-            self.wspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.wspace_r[:, 0] = self.sigma_constructor(t_vec)
-        else:
-            self.vspace_r = np.c_[self.vspace_r, t_vec]
-            self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(t_vec)]
-
-        # Build symmetrized t_vec using coeffs, and extend vspace and wspace
-        if self.vspace_rp is None:
-            self.vspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.vspace_rp[:, 0] = t_vec_pair
-            self.wspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-            self.wspace_rp[:, 0] = self.sigma_constructor(t_vec_pair)
-        else:
-            self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
-            self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
-
-        self.check_and_save_rh()
+            # Build symmetrized t_vec using coeffs, and extend vspace and wspace
+            if self.vspace_rp is None:
+                self.vspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
+                self.vspace_rp[:, 0] = t_vec_pair
+                self.wspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
+                self.wspace_rp[:, 0] = self.sigma_constructor(t_vec_pair)
+            else:
+                self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
+                self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
 
     def extend_left_handed_spaces(self,it):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, -1])
-    #    t_vec_l, good_t_vec = utils.orthogonalize_v1_against_v2(t_vec_l, self.vspace_r[:, -1])
         for ii in range(self.vspace_r.shape[1]):
             t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
 
-        t_vec_l_norm = np.linalg.norm(t_vec_l)
-        if t_vec_l_norm < 1e-8:
-            good_t_vec = False
-        else :
-            t_vec_l = t_vec_l / t_vec_l_norm
-            good_t_vec = True
-
-        np.savetxt("t_vec_lp_c" + str(self.cycle) + "_i", t_vec_l)
+        #t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
+        t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
+        t_vec_l_pair = self.get_pair('x', t_vec_l)
 
         if good_t_vec:
             if self.vspace_l is None:
@@ -203,24 +178,18 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.vspace_l[:, 0] = t_vec_l
 
                 self.wspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_l[:, 0] = self.sigma_constructor(self.vspace_l[:, 0])
+                self.wspace_l[:, 0] = self.sigma_constructor(t_vec_l)
 
                 self.vspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_lp[:, 0] = self.get_pair('x', self.vspace_l[:, 0])
+                self.vspace_lp[:, 0] = t_vec_l_pair
 
                 self.wspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_lp[:, 0] = self.get_pair('Ax', self.wspace_l[:, 0])
+                self.wspace_lp[:, 0] = self.sigma_constructor(t_vec_l_pair)
             else:
                 self.vspace_l = np.c_[self.vspace_l, t_vec_l]
-                self.vspace_lp = np.c_[self.vspace_lp, self.get_pair('x', self.vspace_l[:, -1])]
-                self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(self.vspace_l[:, -1])]
-                self.wspace_lp = np.c_[self.wspace_lp, self.get_pair('Ax', self.wspace_l[:, -1])]
-
-            self.save_array_as_vectors(self.vspace_l, "vspace_l_c" + str(self.cycle))
-            self.save_array_as_vectors(self.vspace_lp, "vspace_lp_c" + str(self.cycle))
-            self.save_array_as_vectors(self.wspace_l, "wspace_l_c" + str(self.cycle))
-            self.save_array_as_vectors(self.wspace_lp, "wspace_lp_c" + str(self.cycle))
-            #self.zero_check_and_save_lh()
+                self.vspace_lp = np.c_[self.vspace_lp, t_vec_l_pair]
+                self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(t_vec_l)]
+                self.wspace_lp = np.c_[self.wspace_lp, self.sigma_constructor(t_vec_l_pair)]
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
@@ -314,7 +283,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         guess = np.zeros(self.nov, dtype=self.complex_precision)
 
         if symmetry_type == 'general':
-            guess[self.eindex[iguess]] = 1.0 + 0.0j
+            guess[self.eindex[iguess]] = self.complex_precision(1.0 + 0.0j)
 
         elif symmetry_type == '4c':
             component = iguess % 4
@@ -383,8 +352,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             if np.abs(d) > 1e-12:
                 t = 1.0 + np.sqrt(r)
                 print("t = ", t)
-
-
                 print("np.sqrt(d) = ", np.sqrt(d))
                 print("np.real(z) = ", np.real(z))
                 print("np.imag(z) = ", np.imag(z))
@@ -443,10 +410,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         np.savetxt("v2_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", v2)
 
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
-        print("u_m1_u = ", u_m1_u)
+        print("u_m1_u"+str(iev) +"= ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
-            print("u_m1_r = ", u_m1_r)
+            print("u_m1_r"+str(iev) +" = ", u_m1_r)
             factor = u_m1_r / np.real(u_m1_u)
             return factor*v2-v1
         else:

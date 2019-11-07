@@ -215,3 +215,11 @@ def save_arrs_to_file(arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/
 def rs_self__orthogonalize(vio, vec):
     d = np.vdot(vec, vio)
     return vio - d*vec
+
+
+def rs_self_normalize(vio):
+    d = np.linalg.norm(vio)
+    if d > 1e-12:
+        return vio/d, True
+    else:
+        return vio/d, False
