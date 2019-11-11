@@ -90,7 +90,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             if it > 70:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
-            max_cycle = 3
+            max_cycle = 4
             if self.cycle > max_cycle:
                 sys.exit("got to cycle " + str(max_cycle) + ", exit")
 
@@ -98,7 +98,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.iev = iev
                 self.extend_right_handed_spaces(iev)
                 if self.cycle > 1:
-                    self.extend_left_handed_spaces(iev)
+                    self.extend_left_handed_spaces()
                 it = it + 1
 
             # Build subspace matrix : v*Av = v*w
@@ -142,54 +142,70 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec = d1 * t_vec + d2 * t_vec_pair
             t_vec_pair = self.get_pair('x', t_vec)
 
+            v_vec_r = t_vec
+            w_vec_r = self.sigma_constructor(v_vec_r)
+            v_vec_rp = t_vec_pair
+            w_vec_rp = self.sigma_constructor(v_vec_rp)
             if self.vspace_r is None:
                 self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_r[:, 0] = t_vec
+                self.vspace_r[:, 0] = v_vec_r
                 self.wspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_r[:, 0] = self.sigma_constructor(t_vec)
+                self.wspace_r[:, 0] = w_vec_r
             else:
-                self.vspace_r = np.c_[self.vspace_r, t_vec]
-                self.wspace_r = np.c_[self.wspace_r, self.sigma_constructor(t_vec)]
+                self.vspace_r = np.c_[self.vspace_r, v_vec_r]
+                self.wspace_r = np.c_[self.wspace_r, w_vec_r]
 
-            # Build symmetrized t_vec using coeffs, and extend vspace and wspace
             if self.vspace_rp is None:
                 self.vspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_rp[:, 0] = t_vec_pair
+                self.vspace_rp[:, 0] = v_vec_rp
                 self.wspace_rp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_rp[:, 0] = self.sigma_constructor(t_vec_pair)
+                self.wspace_rp[:, 0] = w_vec_rp
             else:
-                self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
-                self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
+                self.vspace_rp = np.c_[self.vspace_rp, v_vec_rp]
+                self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(w_vec_rp)]
 
-    def extend_left_handed_spaces(self,it):
+            np.savetxt("v_vec_r_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", v_vec_r)
+            np.savetxt("v_vec_pair_r_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", v_vec_rp)
+            np.savetxt("w_vec_r_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", w_vec_r)
+            np.savetxt("w_vec_pair_r_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", w_vec_rp)
+
+    def extend_left_handed_spaces(self):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, -1])
         for ii in range(self.vspace_r.shape[1]):
             t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
 
-        #t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
         t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
-        t_vec_l_pair = self.get_pair('x', t_vec_l)
+        t_vec_lp = self.get_pair('x', t_vec_l)
 
         if good_t_vec:
+            v_vec_l = t_vec_l
+            w_vec_l = self.sigma_constructor(v_vec_l)
+            v_vec_lp = t_vec_lp
+            w_vec_lp = self.sigma_constructor(v_vec_lp)
             if self.vspace_l is None:
                 self.vspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_l[:, 0] = t_vec_l
+                self.vspace_l[:, 0] = v_vec_l
 
                 self.wspace_l = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_l[:, 0] = self.sigma_constructor(t_vec_l)
+                self.wspace_l[:, 0] = w_vec_l
 
                 self.vspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.vspace_lp[:, 0] = t_vec_l_pair
+                self.vspace_lp[:, 0] = v_vec_lp
 
                 self.wspace_lp = np.ndarray((self.ndim, 1), self.complex_precision)
-                self.wspace_lp[:, 0] = self.sigma_constructor(t_vec_l_pair)
+                self.wspace_lp[:, 0] = w_vec_lp
             else:
-                self.vspace_l = np.c_[self.vspace_l, t_vec_l]
-                self.vspace_lp = np.c_[self.vspace_lp, t_vec_l_pair]
-                self.wspace_l = np.c_[self.wspace_l, self.sigma_constructor(t_vec_l)]
-                self.wspace_lp = np.c_[self.wspace_lp, self.sigma_constructor(t_vec_l_pair)]
+                self.vspace_l = np.c_[self.vspace_l, v_vec_l]
+                self.vspace_lp = np.c_[self.vspace_lp, v_vec_lp]
+                self.wspace_l = np.c_[self.wspace_l, w_vec_l]
+                self.wspace_lp = np.c_[self.wspace_lp, w_vec_lp]
+
+            np.savetxt("v_vec_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", v_vec_l)
+            np.savetxt("v_vec_pair_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", v_vec_lp)
+            np.savetxt("w_vec_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", w_vec_l)
+            np.savetxt("w_vec_pair_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", w_vec_lp)
 
     # Ugly, but will slowly swap out parts for more sensible approach
     def build_subspace_matrix(self):
@@ -200,13 +216,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         submat = np.zeros((sb_dim, sb_dim), self.complex_precision)
 
         if self.vspace_r is not None:
-            print("self.vspace_r.shape = ", self.vspace_r.shape)
+            print("self.vspace_r.shape = ", self.vspace_r.shape, end='   ')
         if self.vspace_l is not None:
-            print("self.vspace_l.shape = ", self.vspace_l.shape)
+            print("self.vspace_l.shape = ", self.vspace_l.shape, end='   ')
         if self.vspace_rp is not None:
-            print("self.vspace_rp.shape = ", self.vspace_rp.shape)
+            print("self.vspace_rp.shape = ", self.vspace_rp.shape, end='   ')
         if self.vspace_lp is not None:
-            print("self.vspace_lp.shape = ", self.vspace_lp.shape)
+            print("self.vspace_lp.shape = ", self.vspace_lp.shape, end='   ')
 
         print("sb_dim = ", sb_dim)
 
@@ -239,14 +255,14 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
         # (eigenvalues in the spectrum are always in positive and negative pairs)
         idx = ritz_vals.argsort()
+        tmp_ritz_vals = ritz_vals[idx]
+        np.savetxt("ritz_vals" + str(self.cycle) + ".txt",  tmp_ritz_vals)
         t2 = int(len(ritz_vals)/2)
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
-        print("ritz_vals orig = ", ritz_vals)
         ritz_vals = ritz_vals[idx]
         ritz_vecs = ritz_vecs[:, idx]
-        print("ritz_vals sorted = ", ritz_vals)
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
@@ -341,8 +357,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             z = z + vec[ii] * vec[ii+nh]
 
         # z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
-        d = np.float64(z * np.conj(z))
-        r = np.float64(1.0 - 4.0 * d)
+        d = self.real_precision(z * np.conj(z))
+        r = self.real_precision(np.float64(1.0 - 4.0 * d))
         print("determining t_vec coefficients")
         print("z = ", z)
         print("d = ", d)
@@ -355,18 +371,21 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 print("np.sqrt(d) = ", np.sqrt(d))
                 print("np.real(z) = ", np.real(z))
                 print("np.imag(z) = ", np.imag(z))
-                r1 = np.real(z)/np.sqrt(d)
-                r2 = np.imag(z)/np.sqrt(d)
+                r1 = self.real_precision(np.real(z)/np.sqrt(d))
+                r2 = self.real_precision(np.imag(z)/np.sqrt(d))
 
                 print("r1 = ", r1)
                 print("r2 = ", r2)
 
-                d1 = -r1 * np.sqrt(0.5*t/r) + r2*np.sqrt(0.5*t/r)*1.0j
-                d2 = np.sqrt(2.0*d/(t*r)) + 0.0j
+                half = self.real_precision(0.5)
+                sqrtm1 = self.complex_precision(1.0)
+
+                d1 = -r1 * self.complex_precision(np.sqrt(half*t/r) + r2*np.sqrt(half*t/r)*sqrtm1)
+                d2 = np.sqrt(self.complex_precision(self.real_precision(2.0)*d/(t*r)) + 0.0j)
             else:
                 print("WARNING!, small d in orthonormalize pair routine")
-                d1 = 1.0 + 0.0j
-                d2 = 0.0 + 0.0j
+                d1 = self.complex_precision(1.0 + 0.0j)
+                d2 = self.complex_precision(0.0 + 0.0j)
         else:
             print("WARNING!, small r in orthonormalize pair routine")
 
@@ -406,14 +425,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                     v2[idx] = 0.0 + 0.0j
                 idx += 1
 
-        np.savetxt("v1_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", v1)
-        np.savetxt("v2_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", v2)
-
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
-        print("u_m1_u"+str(iev) +"= ", u_m1_u)
+        print("u_m1_u"+str(iev) + " = ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
-            print("u_m1_r"+str(iev) +" = ", u_m1_r)
+            print("u_m1_r"+str(iev) + " = ", u_m1_r)
             factor = u_m1_r / np.real(u_m1_u)
             return factor*v2-v1
         else:
