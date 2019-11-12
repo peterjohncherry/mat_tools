@@ -13,6 +13,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
 
+        self.save_dir = "/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/TXTS/"
         decimal.getcontext().prec = 32
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
@@ -98,8 +99,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.iev = iev
                 self.extend_right_handed_spaces(iev)
                 if self.cycle > 1:
-                    self.extend_left_handed_spaces(iev)
+                    self.extend_left_handed_spaces()
                 it = it + 1
+
+            self.save_spaces()
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
@@ -130,7 +133,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec = self.get_new_tvec(iev)
 
             for ii in range(self.vspace_r.shape[1]):
-                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:,ii])
+                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:, ii])
 
         t_vec, good_t_vec = utils.rs_self_normalize(t_vec)
         if good_t_vec:
@@ -141,6 +144,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             t_vec_pair = self.get_pair('x', t_vec)
             t_vec = d1 * t_vec + d2 * t_vec_pair
             t_vec_pair = self.get_pair('x', t_vec)
+            np.savetxt(self.save_dir + "t_vec_r_c" + str(self.cycle) + "_i" + str(iev) + ".txt", t_vec)
+            np.savetxt(self.save_dir + "t_vec_rp_c" + str(self.cycle) + "_i" + str(iev) + ".txt", t_vec_pair)
 
             if self.vspace_r is None:
                 self.vspace_r = np.ndarray((self.ndim, 1), self.complex_precision)
@@ -161,16 +166,17 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 self.vspace_rp = np.c_[self.vspace_rp, t_vec_pair]
                 self.wspace_rp = np.c_[self.wspace_rp, self.sigma_constructor(t_vec_pair)]
 
-    def extend_left_handed_spaces(self,it):
+    def extend_left_handed_spaces(self):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, -1])
         for ii in range(self.vspace_r.shape[1]):
             t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
 
-        #t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
         t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
         t_vec_l_pair = self.get_pair('x', t_vec_l)
+        np.savetxt(self.save_dir + "t_vec_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", t_vec_l)
+        np.savetxt(self.save_dir + "t_vec_lp_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", t_vec_l_pair)
 
         if good_t_vec:
             if self.vspace_l is None:
@@ -233,20 +239,21 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
-        np.savetxt("submat" + str(submat.shape[0]) + ".txt", np.real(submat))
+        np.savetxt(self.save_dir+"submat" + str(submat.shape[0]) + ".txt", np.real(submat))
         ritz_vals, ritz_vecs = np.linalg.eig(submat)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
         # (eigenvalues in the spectrum are always in positive and negative pairs)
         idx = ritz_vals.argsort()
+        tmp_ritz_vals = ritz_vals[idx]
+        np.savetxt(self.save_dir+"ritz_vals_c"+str(self.cycle)+".txt", tmp_ritz_vals)
         t2 = int(len(ritz_vals)/2)
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
 
-        print("ritz_vals orig = ", ritz_vals)
         ritz_vals = ritz_vals[idx]
         ritz_vecs = ritz_vecs[:, idx]
-        print("ritz_vals sorted = ", ritz_vals)
+        print("====== ritz_vals sorted ====== \n", ritz_vals)
 
         # Construction of Ritz vectors from eigenvectors
         self.u_vecs = np.zeros((self.ndim, self.nev), self.complex_precision)
@@ -332,17 +339,22 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     # This restructures the input vector so that it's "pair" as constructed using get_pair
     # will also be orthogonal to the vector space
     def orthonormalize_pair(self, vec):
-        d1 = np.float64(0.0)
-        d2 = np.float64(0.0)
-        z = np.float64(0.0)+np.float64(0.0)*1j
+        d1 = self.complex_precision(0.0 + 0.0j)
+        d2 = self.complex_precision(0.0 + 0.0j)
+        z = self.complex_precision(0.0 + 0.0j)
         nh = int(self.ndim/2)
-        np.savetxt("t_vec_op_i"+str(self.iev)+"_c"+str(self.cycle)+".txt", vec)
         for ii in range(nh):
             z = z + vec[ii] * vec[ii+nh]
 
         # z = np.dot(vec[:int(self.ndim/2)], vec[int(self.ndim/2):])
-        d = np.float64(z * np.conj(z))
-        r = np.float64(1.0 - 4.0 * d)
+        one = self.complex_precision(1.0 + 0.0j)
+        four = self.complex_precision(4.0 + 0.0j)
+        half = self.complex_precision(0.5 + 0.0j)
+        two = self.complex_precision(2.0 + 0.0j)
+        d = self.complex_precision(z * np.conj(z) + 0.0j)
+        r = self.complex_precision(one - four * d + 0.0j)
+        sqrt1 = self.complex_precision(0.0 + 1.0j)
+
         print("determining t_vec coefficients")
         print("z = ", z)
         print("d = ", d)
@@ -350,7 +362,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         if r >= 1e-12:
             if np.abs(d) > 1e-12:
-                t = 1.0 + np.sqrt(r)
+                t = self.complex_precision(one + np.sqrt(r) + 0.0j)
                 print("t = ", t)
                 print("np.sqrt(d) = ", np.sqrt(d))
                 print("np.real(z) = ", np.real(z))
@@ -361,12 +373,12 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 print("r1 = ", r1)
                 print("r2 = ", r2)
 
-                d1 = -r1 * np.sqrt(0.5*t/r) + r2*np.sqrt(0.5*t/r)*1.0j
-                d2 = np.sqrt(2.0*d/(t*r)) + 0.0j
+                d1 = self.complex_precision(-r1 * np.sqrt(half*t/r) + r2*np.sqrt(half*t/r)*sqrt1)
+                d2 = self.complex_precision(np.sqrt(two*d/(t*r)) + 0.0j)
             else:
                 print("WARNING!, small d in orthonormalize pair routine")
-                d1 = 1.0 + 0.0j
-                d2 = 0.0 + 0.0j
+                d1 = self.complex_precision(1.0 + 0.0j)
+                d2 = self.complex_precision(0.0 + 0.0j)
         else:
             print("WARNING!, small r in orthonormalize pair routine")
 
@@ -377,19 +389,19 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         v1 = np.ndarray(self.ndim, self.complex_precision)  # v1 = M^{-1}*r
         v2 = np.ndarray(self.ndim, self.complex_precision)  # v2 = M^{-1}*u
         idx = 0
-
+        one = self.complex_precision(1.0 + 0.0j)
         # First half of vector
         for ii in range(self.nocc):
             for jj in range(self.nvirt):
                 ediff = (self.evalai(ii, jj) - np.real(self.teta[iev]))
                 if abs(ediff) > 1e-8:
-                    dtmp = 1 / ediff
+                    dtmp = one / ediff
                     v1[idx] = self.r_vecs[idx, iev] * dtmp
                     v2[idx] = self.u_vecs[idx, iev] * dtmp
                 else:
                     print("Warning, (E_{a}-E_{i})<1e-8")
-                    v1[idx] = 0.0 + 0.0j
-                    v2[idx] = 0.0 + 0.0j
+                    v1[idx] = self.complex_precision(0.0 + 0.0j)
+                    v2[idx] = self.complex_precision(0.0 + 0.0j)
                 idx += 1
 
         # Second half of vector
@@ -397,23 +409,20 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             for jj in range(self.nvirt):
                 ediff = -self.evalai(ii, jj) - np.real(self.teta[iev])
                 if abs(ediff) > 1e-8:
-                    dtmp = 1 / ediff
+                    dtmp = one / ediff
                     v1[idx] = self.r_vecs[idx, iev] * dtmp
                     v2[idx] = self.u_vecs[idx, iev] * dtmp
                 else:
                     print("Warning, (E_{a}-E_{i})<1e-8")
-                    v1[idx] = 0.0 + 0.0j
-                    v2[idx] = 0.0 + 0.0j
+                    v1[idx] = self.complex_precision(0.0 + 0.0j)
+                    v2[idx] = self.complex_precision(0.0 + 0.0j)
                 idx += 1
 
-        np.savetxt("v1_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", v1)
-        np.savetxt("v2_c" + str(self.cycle) + "_i" + str(iev + 1) + ".txt", v2)
-
         u_m1_u = np.vdot(self.u_vecs[:, iev], v2)
-        print("u_m1_u"+str(iev) +"= ", u_m1_u)
+        print("u_m1_u"+str(iev) + " = ", u_m1_u)
         if abs(u_m1_u) > 1e-8:
             u_m1_r = np.vdot(self.u_vecs[:, iev], v1)
-            print("u_m1_r"+str(iev) +" = ", u_m1_r)
+            print("u_m1_r"+str(iev) + " = ", u_m1_r)
             factor = u_m1_r / np.real(u_m1_u)
             return factor*v2-v1
         else:
@@ -425,34 +434,28 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)
 
-    def check_and_save_rh(self):
-        utils.check_for_nans([self.vspace_r, self.vspace_rp, self.wspace_r, self.wspace_rp],
-                             ["vspace_r", "vspace_rp", "wspace_r", "wspace_rp"])
-
-        for ii in range(self.vspace_r.shape[1]):
-            utils.save_arrs_to_file([self.vspace_r[:, ii], self.vspace_rp[:, ii], self.wspace_r[:, ii],
-                                     self.wspace_rp[:, ii]],
-                                    ["vspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
-                                     "vspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1),
-                                     "wspace_r_c" + str(self.cycle) + "_i" + str(ii + 1),
-                                     "wspace_rp_c" + str(self.cycle) + "_i" + str(ii + 1)])
-
-    def check_and_save_lh(self):
-        utils.check_for_nans([self.vspace_l, self.vspace_lp, self.wspace_l, self.wspace_lp],
-                             ["vspace_l", "vspace_lp", "wspace_l", "wspace_lp"])
-
-        for ii in range(self.vspace_l.shape[1]):
-            utils.save_arrs_to_file([self.vspace_l[:, ii], self.vspace_lp[:, ii], self.wspace_l[:, ii],
-                                     self.wspace_lp[:, ii]],
-                                    ["vspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
-                                     "vspace_lp_c" + str(self.cycle) + "_i" + str(ii+1),
-                                     "wspace_l_c" + str(self.cycle) + "_i" + str(ii+1),
-                                     "wspace_lp_c" + str(self.cycle) + "_i" + str(ii+1)])
+    def save_spaces(self):
+        if self.vspace_r is not None:
+            self.save_array_as_vectors(self.vspace_r, self.save_dir + "v_vec_r_c"+str(self.cycle))
+        if self.vspace_rp is not None:
+            self.save_array_as_vectors(self.vspace_rp, self.save_dir + "v_vec_rp_c"+str(self.cycle))
+        if self.vspace_l is not None:
+            self.save_array_as_vectors(self.vspace_l, self.save_dir + "v_vec_l_c"+str(self.cycle))
+        if self.vspace_lp is not None:
+            self.save_array_as_vectors(self.vspace_lp, self.save_dir + "v_vec_lp_c"+str(self.cycle))
+        if self.wspace_r is not None:
+            self.save_array_as_vectors(self.wspace_r, self.save_dir + "w_vec_r_c"+str(self.cycle))
+        if self.wspace_rp is not None:
+            self.save_array_as_vectors(self.wspace_rp, self.save_dir + "w_vec_rp_c"+str(self.cycle))
+        if self.wspace_l is not None:
+            self.save_array_as_vectors(self.wspace_l, self.save_dir + "w_vec_l_c"+str(self.cycle))
+        if self.wspace_lp is not None:
+            self.save_array_as_vectors(self.wspace_lp, self.save_dir + "w_vec_lp_c"+str(self.cycle))
 
     @staticmethod
     def save_array_as_vectors(my_arr, name):
         for ii in range(my_arr.shape[1]):
-            np.savetxt(name+"_i"+str(ii), my_arr[:, ii])
+            np.savetxt(name+"_i"+str(ii)+".txt", my_arr[:, ii])
 
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)
