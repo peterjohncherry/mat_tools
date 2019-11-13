@@ -30,7 +30,7 @@ def test_jacobi_davidson_tda_4c():
 
 
 def test_jacobi_davidson_full_4c():
-    nevals = 3
+    nevals = 5
     jd_test = jd_f_4c.JacobiDavidsonFull4C(num_eigenvalues=nevals,
                                            rs_filename="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf")
     jd_test.read_full_matrix(file_seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/full_mat")
