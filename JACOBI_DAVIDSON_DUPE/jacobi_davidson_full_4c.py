@@ -122,6 +122,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 print("Not converged on iteration ", it)
                 print("dnorm = ", dnorm, "skip = ", skip)
             else:
+                num_rvals = 10
+                self.get_excited_residual_vectors(submat, num_rvals)
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
                 sys.exit("Converged!!")
 
@@ -467,3 +469,47 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         evals, evecs = np.linalg.eig(self.mat_orig)
         np.set_printoptions(threshold=sys.maxsize)
         print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
+
+    def get_excited_residual_vectors(self, submat, num_rvals):
+        # Ritz values and Ritz vectors defined in trial vspace
+        ritz_vals, ritz_vecs = np.linalg.eig(submat)
+
+        # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
+        # (eigenvalues in the spectrum are always in positive and negative pairs)
+        idx = ritz_vals.argsort()
+        t2 = int(len(ritz_vals)/2)
+        for ii in range(t2):
+            idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
+
+        ritz_vals = ritz_vals[idx]
+        ritz_vecs = ritz_vecs[:, idx]
+        print("====== ritz_vals sorted ====== \n", ritz_vals)
+
+        # Construction of Ritz vectors from eigenvectors
+        extended_u_vecs = np.zeros((self.ndim, num_rvals), self.complex_precision)
+        for iev in range(num_rvals):
+            vi = 0
+            for vs in [self.vspace_r, self.vspace_l, self.vspace_rp, self.vspace_lp]:
+                if vs is not None:
+                    for ii in range(vs.shape[1]):
+                        extended_u_vecs[:, iev] = extended_u_vecs[:, iev] + ritz_vecs[ii+vi, iev] * vs[:, ii]
+                    vi = vi + vs.shape[1]
+
+        # Construction of u_hat from Ritz_vectors and w_spaces,
+        extended_dnorm = np.zeros(num_rvals, self.complex_precision)
+        extended_r_vecs = np.zeros((self.ndim, num_rvals), self.complex_precision)
+        for iev in range(num_rvals):
+            wj = 0
+            u_hat = np.zeros(self.ndim, self.complex_precision)
+            for ws in [self.wspace_r, self.wspace_l, self.wspace_rp, self.wspace_lp]:
+                if ws is not None:
+                    for jj in range(ws.shape[1]):
+                        u_hat = u_hat + ritz_vecs[jj+wj, iev] * ws[:, jj]
+                    wj = wj + ws.shape[1]
+
+            # Calculation of residual vectors, and residual norms
+            extended_r_vecs[:, iev] = u_hat - extended_u_vecs[:, iev] * ritz_vals[iev]
+            extended_dnorm[iev] = np.linalg.norm(extended_r_vecs[:, iev])
+
+        self.save_array_as_vectors(extended_r_vecs, self.save_dir + "extended_r_vecs_c" + str(self.cycle))
+        np.savetxt(self.save_dir + "extended_d_norm_c" + str(self.cycle), extended_dnorm)
