@@ -91,7 +91,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             if it > 70:
                 sys.exit("Exceeded maximum number of iterations. ABORTING!")
 
-            max_cycle = 3
+            max_cycle = 100
             if self.cycle > max_cycle:
                 sys.exit("got to cycle " + str(max_cycle) + ", exit")
 
@@ -252,7 +252,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # (eigenvalues in the spectrum are always in positive and negative pairs)
         idx = ritz_vals.argsort()
         tmp_ritz_vals = ritz_vals[idx]
-        np.savetxt(self.save_dir+"ritz_vals_c"+str(self.cycle)+".txt", tmp_ritz_vals)
+        np.savetxt(self.save_dir+"ritz_vals_c"+str(self.cycle)+"_python.txt", tmp_ritz_vals)
         t2 = int(len(ritz_vals)/2)
         for ii in range(t2):
             idx[ii], idx[ii+t2] = idx[ii+t2], idx[ii]
