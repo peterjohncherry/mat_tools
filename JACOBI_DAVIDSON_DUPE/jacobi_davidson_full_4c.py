@@ -106,7 +106,9 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
+            np.savetxt(self.save_dir + "submat_c" + str(self.cycle) + "_i" + str(submat.shape[1]) + ".txt", submat )
             dnorm = self.get_residual_vectors(submat)
+            self.save_array_as_vectors(self.r_vecs, self.save_dir + "r_vecs_c" + str(self.cycle))
 
             skip = np.ndarray(self.nev, np.bool)
             for ii in range(self.nev):
@@ -134,6 +136,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             for ii in range(self.vspace_r.shape[1]):
                 t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:, ii])
+                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_rp[:, ii])
+                if self.vspace_l is not None:
+                    for jj in range(self.vspace_l.shape[1]):
+                        t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_l[:, jj])
+                        t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_lp[:, jj])
 
         t_vec, good_t_vec = utils.rs_self_normalize(t_vec)
         if good_t_vec:
@@ -239,7 +246,6 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def get_residual_vectors(self, submat):
         # Ritz values and Ritz vectors defined in trial vspace
-        np.savetxt(self.save_dir+"submat" + str(submat.shape[0]) + ".txt", np.real(submat))
         ritz_vals, ritz_vecs = np.linalg.eig(submat)
 
         # ordering eigenvalues and eigenvectors so first set of evals are positive and run in ascending order
