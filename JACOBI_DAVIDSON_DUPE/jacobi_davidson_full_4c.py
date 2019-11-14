@@ -131,20 +131,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
     def extend_right_handed_spaces(self, iev):
 
+        good_t_vec = True
         if self.cycle == 1:
             t_vec = self.u_vecs[:, iev]
         else:
             t_vec = self.get_new_tvec(iev)
+            t_vec, good_t_vec = self.orthonormalize_wrt_expansion_space(t_vec)
 
-            for ii in range(self.vspace_r.shape[1]):
-                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_r[:, ii])
-                t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_rp[:, ii])
-                if self.vspace_l is not None:
-                    for jj in range(self.vspace_l.shape[1]):
-                        t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_l[:, jj])
-                        t_vec = utils.rs_self__orthogonalize(t_vec, self.vspace_lp[:, jj])
-
-        t_vec, good_t_vec = utils.rs_self_normalize(t_vec)
         if good_t_vec:
             # Get coefficients for symmetrization
             d1, d2 = self.orthonormalize_pair(t_vec)
@@ -179,10 +172,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         # good_t_vec is only true if the left eigenvector just generated has as sufficiently large component
         # which is orthogonal to the space spanned by the right eigenvectors
         t_vec_l = self.get_left_evec(self.vspace_r[:, -1])
-        for ii in range(self.vspace_r.shape[1]):
-            t_vec_l = utils.rs_self__orthogonalize(t_vec_l, self.vspace_r[:, ii])
-
-        t_vec_l, good_t_vec = utils.rs_self_normalize(t_vec_l)
+        t_vec_l, good_t_vec = self.orthonormalize_wrt_expansion_space(t_vec_l)
         t_vec_l_pair = self.get_pair('x', t_vec_l)
         np.savetxt(self.save_dir + "t_vec_l_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", t_vec_l)
         np.savetxt(self.save_dir + "t_vec_lp_c" + str(self.cycle) + "_i" + str(self.iev) + ".txt", t_vec_l_pair)
@@ -513,3 +503,13 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
         self.save_array_as_vectors(extended_r_vecs, self.save_dir + "extended_r_vecs_c" + str(self.cycle))
         np.savetxt(self.save_dir + "extended_d_norm_c" + str(self.cycle), extended_dnorm)
+
+    def orthonormalize_wrt_expansion_space(self, t_vec):
+        t_vec, good_t_vec = utils.orthonormalize_wrt_mat(t_vec, self.vspace_r)
+        if good_t_vec and self.vspace_rp is not None:
+            t_vec, good_t_vec = utils.orthonormalize_wrt_mat(t_vec, self.vspace_rp)
+        if good_t_vec and self.vspace_l is not None:
+            t_vec, good_t_vec = utils.orthonormalize_wrt_mat(t_vec, self.vspace_l)
+        if good_t_vec and self.vspace_lp is not None:
+            t_vec, good_t_vec = utils.orthonormalize_wrt_mat(t_vec, self.vspace_lp)
+        return t_vec, good_t_vec

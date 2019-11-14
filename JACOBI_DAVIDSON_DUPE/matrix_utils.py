@@ -217,9 +217,63 @@ def rs_self__orthogonalize(vio, vec):
     return vio - d*vec
 
 
+def orthogonalize_wrt_mat(vio, mat):
+    for i in range(mat.shape[1]):
+        vio = rs_self__orthogonalize(vio, mat[:, i])
+    return vio
+
+
+def orthonormalize_wrt_mat(vio, mat, angle_thresh=1e-8, abs_thresh=1e-12):
+    vnorm_orig = np.linalg.norm(vio)
+    vio = orthogonalize_wrt_mat(vio, mat)
+    vnorm_new = np.linalg.norm(vio)
+    if vnorm_new/vnorm_orig < angle_thresh or vnorm_new < abs_thresh:
+        return vio/vnorm_new, False
+    else:
+        return vio/vnorm_new, True
+
+
+# err_code 0 : orthonormalization successful
+# err_code 1 : output vec is has norm below threshold
+# err_code 2 : input vec is nearly linearly dependent on vectors in mat
+def modified_gramm_schmidt(vec, mat):
+    abs_thresh = 1e-8
+    angle = 1e-8
+    orig_norm = np.vdot(vec, vec)
+    vec = vec / orig_norm
+    v_norm = orig_norm
+    for j in range(mat.shape[1]):
+        mvec = mat[:, j]
+        mvec = mvec / np.vdot(mvec, mvec)
+        vec = vec - np.vdot(mvec, vec)
+        v_norm = np.vdot(vec, vec)
+        if v_norm < abs_thresh:
+            return vec, 1  # err_code = 1
+        vec = vec / v_norm
+    if v_norm/orig_norm < angle:
+        return vec, 2  # err_code = 2
+    else:
+        return vec, 0  # err_code = 0
+
+
 def rs_self_normalize(vio):
     d = np.linalg.norm(vio)
     if d > 1e-12:
         return vio/d, True
     else:
         return vio/d, False
+
+
+def modified_gramm_schmidt_2(vec, mat, abs_thresh = 1e-12, angle_thresh = 1e-8):
+    orig_norm = np.vdot(vec, vec)
+    for ii in range(mat.shape[1]):
+        vec = rs_self__orthogonalize(vec, mat[:, ii])
+        vec_norm = np.vdot(vec, vec)
+        #vec = vec / vec_norm
+        if vec_norm < abs_thresh:
+            print('warning normalization failed : vec_norm = '+str(vec_norm))
+            return vec, False
+        elif vec_norm / orig_norm < angle_thresh :
+            print('warning normalization failed : vec_norm/orig_norm = ' + str(vec_norm))
+            return vec, False
+    return vec, True
