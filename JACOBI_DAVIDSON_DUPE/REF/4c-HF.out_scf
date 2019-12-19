@@ -1,0 +1,473 @@
+##############################################################################
+                              Environment setting
+##############################################################################
+
+ Job setting:
+    
+    Call arguments   are    --scf --inp=4c-HF --restart --scratch=/home/peter/RS_FILES/RS_SCRATCH/ 
+    Input file name   is   4c-HF.inp
+    Binary  directory is   /home/peter/ReSpect-mDKS-TDDFT/build
+    Work    directory is   /home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/
+    Scratch directory is   /home/peter/RS_FILES/RS_SCRATCH/tmp10757.4G8f3Y.peter
+    Machine name      is   localhost.localdomain
+    Output  file will be   /home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/4c-HF.out_scf
+
+
+ System setting:
+
+    core file size          (blocks, -c) unlimited
+    data seg size           (kbytes, -d) unlimited
+    scheduling priority             (-e) 0
+    file size               (blocks, -f) unlimited
+    pending signals                 (-i) 63662
+    max locked memory       (kbytes, -l) 64
+    max memory size         (kbytes, -m) unlimited
+    open files                      (-n) 1024
+    pipe size            (512 bytes, -p) 8
+    POSIX message queues     (bytes, -q) 819200
+    real-time priority              (-r) 0
+    stack size              (kbytes, -s) unlimited
+    cpu time               (seconds, -t) unlimited
+    max user processes              (-u) 63662
+    virtual memory          (kbytes, -v) unlimited
+    file locks                      (-x) unlimited
+    omp_thread_limit:
+    omp_stacksize:
+    
+
+##############################################################################
+                               Program ReSpect
+##############################################################################
+::
+
+ Version:       5.2.0 (2019)
+ Released:                       
+ Branch:        HEAD
+ Commit hash:   a753a7533
+ Commit author: peterjohncherry@gmail.com
+ Commit date:   Sat Sep 21 16:12:59 2019 +0200
+ Web page:      http://www.respectprogram.org 
+ Copyright:     The program binaries are freely distributed in the hope they
+                become useful. The experimental nature of the program means
+                that authors accept no responsibility for the correctness
+                of results nor fitness for a particular purpose.
+
+
+ -------
+ Authors
+ -------
+ Repisky Michal
+ Komorovsky Stanislav
+
+
+ --------
+ Founders
+ --------
+ Ruud Kenneth
+ Kaupp Martin
+ Malkina Olga L.
+ Malkin Vladimir G.
+
+
+ ------------
+ Contributors
+ ------------
+ Bast Radovan         - CMake build infrastructure
+ Di Remigio Roberto   - PCMSolver library
+ Ekstrom Ulf          - XCFun library
+ Kadek Marius         - real-time TDDFT library
+ Knecht Stefan        - MPI parallelization
+ Konecny Lukas        - real-time TDDFT library
+ Malkin Elena         - one-component molecular properties
+                      - finite size nucleus and magnetic moment models
+ Malkin-Ondik Irina   - Douglas-Kroll-Hess (DKH) Hamiltonians
+
+
+ To acknowledge ReSpect, use the following citation:
+ ReSpect, version 5.2.0 (2019); Relativistic Spectroscopy DFT program of authors
+ M. Repisky, S. Komorovsky, V. G. Malkin, O. L. Malkina, M. Kaupp, K. Ruud, 
+ with contributions from R. Bast, R. Di Remigio, U. Ekstrom, M. Kadek, S. Knecht,
+ L. Konecny, E. Malkin, I. Malkin-Ondik, (see http://www.respectprogram.org)
+
+
+##############################################################################
+                    Configuration, build, and runtime info
+##############################################################################
+::
+
+ -----------------------------------
+ Configuration and build information
+ -----------------------------------
+
+ Who compiled           | peter
+ Compiled on server     | localhost.localdomain
+ Operating system       | Linux-4.18.19-100.fc27.x86_64
+ CMake version          | 3.11.2
+ CMake generator        | Unix Makefiles
+ CMake build type       | debug
+ Configuration time     | 
+ Python version         | 
+ Fortran compiler       | /usr/bin/gfortran
+ Fortran compiler flags |  -ffloat-store -fcray-pointer -m64 -O0 -g -fbacktrace -Wuninitialized -Wconversion -ffpe-trap=invalid,zero,overflow
+ C compiler             | /usr/lib64/ccache/gcc
+ C compiler flags       |  -std=c99 -DRESTRICT=restrict -DFUNDERSCORE=1 -DHAVE_NO_LSEEK64 -ffloat-store -Wno-unused -m64 -O0 -g3 -DDEBUG -Wall -Wextra -Winit-self -Wuninitialized -Wwrite-strings -Wno-sign-compare
+ C++ compiler           | /usr/lib64/ccache/g++
+ C++ compiler flags     |  -Wall -Wno-sign-compare -Woverloaded-virtual -Wwrite-strings -Wno-unused -fno-rtti -fno-exceptions -m64 -O0 -g3 -DDEBUG
+ Static linking         | False
+ MPI parallelization    | False
+ OMP parallelization    | False
+ Math libraries         | -Wl,--start-group;/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64/libmkl_lapack95_lp64.a;/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64/libmkl_gf_lp64.so;-fopenmp;-Wl,--end-group;-Wl,--start-group;/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64/libmkl_gf_lp64.so;/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64/libmkl_core.so;/usr/lib64/libpthread.so;/usr/lib64/libm.so;-fopenmp;-Wl,--end-group
+ Explicit libraries     | unknown
+
+
+ ------------
+ Runtime info
+ ------------
+
+ Parallelization model: none (sequential)
+
+ Initial time:
+   2019 November 12  17:17:41
+
+
+
+##############################################################################
+                            Input processing info
+##############################################################################
+::
+
+ ----------
+ Input file
+ ----------
+
+ scf:
+ 
+   # CO
+   geo-units: angstrom
+   geometry:
+       C     0.000000   0.000000   0.000000
+       O     0.000000   0.000000   1.115100
+ 
+   method:        mDHF
+   nc-model:      gauss
+   charge:        1
+   multiplicity:  2
+   maxiterations: 30
+   convergence:   1.0e-6
+   eri:           exact
+ 
+   basis:
+     C : upc-0
+     O : upc-0
+ 
+   diis:
+     start:   2
+     collect: 3
+     maximum: 49
+
+
+ ----------------
+ Input processing
+ ----------------
+
+ ... geometry defined in units: angstrom
+
+ ... geometry processing (xyz format)
+
+     C     0.000000   0.000000   0.000000
+     O     0.000000   0.000000   1.115100
+
+ ... method: four-component Dirac-Hartree-Fock (mDHF)
+
+ ... nuclear charge distribution model: gaussian
+
+ ... charge of the system:   1
+
+ ... multiplicity of the system:  2   (doublet)
+
+ ... maximum number of scf iterations:   30
+
+ ... scf convergence criteria:  1.00E-06
+
+ ... exact expression used for the calculation of ERIs
+
+ ... orbital basis required
+
+     C : upc-0
+     O : upc-0
+
+ ... initial Fock matrix to DIIS interpolation: 2
+
+ ... start DIIS after collecting 3 FOCK matrices
+
+ ... maximum number of FOCK matrices used in DIIS interpolation: 49
+
+ ... restart of the SCF procedure required
+
+
+
+##############################################################################
+                             REQUIRED REFERENCES
+##############################################################################
+
+ Whenever results of the ReSpect program are used, cite the following
+ references to the quantum chemical methods and program package.
+
+ ReSpect, version 5.2.0 (2019); Relativistic Spectroscopy DFT program of authors
+ M. Repisky, S. Komorovsky, V. G. Malkin, O. L. Malkina, M. Kaupp, K. Ruud, 
+ with contributions from R. Bast, R. Di Remigio, U. Ekstrom, M. Kadek, S. Knecht,
+ L. Konecny, E. Malkin, I. Malkin-Ondik, (see http://www.respectprogram.org)
+
+
+##############################################################################
+                    Atomic, molecular, and basis sets info
+##############################################################################
+
+
+Atomic and Nuclear Constants
+----------------------------
+::
+
+ The data used in this calculation (unless changed from input) are from
+ the CODATA recommended values of the fundamental physical constants 2010
+ (online at http://physics.nist.gov/constants) and from the 2006 compilation
+ of the Particle Data Group (online at http://pdg.lbl.gov).
+ All values are in the SI-based atomic units unless stated otherwise.
+
+ Inverse fine-structure constant =   137.035999074000
+ Bohr radius [A]                 =     0.529177210920
+ Hartree energy [eV]             =    27.211385050000
+ Electric dipole moment [Debye]  =     2.541746363608
+
+ atom    label     Z    isotop    atomic mass       spin         g-value 
+ ----------------------------------------------------------------------- 
+  C        1       6      12       12.000000      0.000000      0.000000
+  O        2       8      16       15.994915      0.000000      0.000000
+
+
+
+Molecular geometry [A]
+----------------------
+::
+
+ atom    label                 cartesian coordinates            
+ -------------------------------------------------------------- 
+  C        1         0.000000         0.000000         0.000000
+  O        2         0.000000         0.000000         1.115100
+
+
+
+Interatomic distances [A]
+-------------------------
+::
+
+ ---          C  (   1)          O  (   2)
+ C  (   1)    0.000000
+ O  (   2)    1.115100          0.000000
+
+
+
+Atomic orbital basis
+--------------------
+::
+
+ atom  label     prim    cont     orbital basis set details     
+ ---------------------------------------------------------------
+  C      1         14      14     [5s3p]  upc-0
+  O      2         14      14     [5s3p]  upc-0
+
+ Total number of           GTO shells =      16
+ Total number of spherical GTO functions =   28
+ Total number of cartesian GTO functions =   28
+
+
+
+##############################################################################
+                                ReSpect output
+##############################################################################
+
+
+Four-component SCF procedure (SCFun)
+------------------------------------
+::
+
+
+  Fock setting
+  ------------
+  number atoms:                                 2
+  number electrons:                            13
+  number matrices:                              2
+  matrix dimension:                            28
+  number GTO shells:                           16
+  nucleus model:                            gauss
+  ERI classes (up to):                       SSSS (one-center approximation)
+  ERI acceleration:                          none
+  ERI screening threshold:             1.0000E-10
+  HF exchange scaling factor:          1.00000000
+  inverse fine-structure constant:   137.03599907
+
+  TwoFock setting (ERI)
+  ---------------------
+  number atoms:                                 2
+  number electrons:                            13
+  matrix dimension:                            28
+  number GTO shells:                           16
+  ERI classes (up to):                       SSSS (one-center approximation)
+  ERI screening threshold:             1.0000E-10
+  HF exchange scaling factor:          1.00000000
+  inverse fine-structure constant:   137.03599907
+
+
+  Restarting from a previous one-component calculation ... 
+  Matrix to power -5.00E-01(min: 9.50E-02 max: 2.68E+00 thr: 1.00E-08 time: 4.30E-04 cpus: 1)
+  Matrix to power -5.00E-01(min: 4.35E-01 max: 4.28E+00 thr: 1.00E-08 time: 4.60E-04 cpus: 1)
+  Matrix to power -5.00E-01(min: 9.50E-02 max: 2.68E+00 thr: 1.00E-08 time: 4.31E-04 cpus: 1)
+  Matrix to power -5.00E-01(min: 4.35E-01 max: 4.28E+00 thr: 1.00E-08 time: 4.84E-04 cpus: 1)
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   1     -222.7757859313   -2.23E+02   0.00E+00   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>=-5.23E-12    <y>=-5.21E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.1  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   2     -111.9317887532    1.11E+02   6.32E-02   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>=-4.79E-12    <y>=-1.10E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   3     -111.9317905474   -1.79E-06   2.40E-04   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>=-5.75E-12    <y>=-1.73E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   4     -111.9317908385   -2.91E-07   1.84E-04   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>=-6.07E-12    <y>=-9.34E-13    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   5     -111.9317911354   -2.97E-07   3.29E-05   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>=-3.19E-12    <y>=-2.36E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   6     -111.9317912205   -8.51E-08   2.17E-05   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>= 6.96E-13    <y>= 4.70E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   7     -111.9317912711   -5.07E-08   1.07E-05   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>= 4.48E-12    <y>= 9.32E-12    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   8     -111.9317912878   -1.67E-08   3.66E-06   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>= 1.39E-12    <y>=-6.02E-14    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+                     Energy           dE       max[F,D]   diagfree        off
+                ----------------   ---------   --------   --------
+  Cycle:   9     -111.9317912894   -1.60E-09   7.31E-07   screening       eri= 1.00E+02    xc=  1.00E+02
+                                                          ---------
+                                                          spin density    <x>= 3.40E-13    <y>= 1.38E-13    <z>= 1.00E+00
+                                                          ------------
+                                                          time (hh:mm:ss) eri= 00:00:00.2  xc=  00:00:00.0  dia= 00:00:00.0  tot= 00:00:00.2  
+                                                          ---------------
+
+
+  Happy end
+
+
+  --- Electronic energy        --- =      -134.710471339788
+  --- Nuclear-repulsion energy --- =        22.778680050363
+  --- Total energy             --- =      -111.931791289425
+
+
+
+  Energy of occupied orbitals
+  ---------------------------
+
+  (1-5)           -21.22594     -21.19649     -11.95819     -11.90043      -2.00141
+  (6-10)           -1.95737      -1.20284      -1.17025      -1.09911      -1.09820
+  (11-13)          -1.09456      -1.02629      -1.02578
+
+
+
+  Energy of virtual orbitals (positive energy states)
+  ---------------------------------------------------
+
+  (14-18)          -0.39698      -0.26026      -0.25964      -0.19164      -0.19137
+  (19-23)           0.19162       0.22813       0.45742       0.45750       0.54337
+  (24-28)           0.54356       0.65702       0.74532       1.23466       1.23612
+  (29-33)           1.26544       1.26650       1.34576       1.34696       6.18992
+  (34-38)           6.19209       6.24461       6.24683       6.43835       6.50339
+  (39-43)          10.82979      10.90768      11.82305      11.83167      11.87820
+  (44-48)          11.88709      11.93944      11.94451      20.55518      20.58834
+  (49-53)          96.68601      96.70740     175.65835     175.66335     714.02031
+  (54-56)         714.02749    1273.23225    1273.23286
+
+
+
+
+  Checkpointing ...
+  Matrix to power -5.00E-01(min: 9.50E-02 max: 2.68E+00 thr: 1.00E-08 time: 4.20E-04 cpus: 1)
+  Matrix to power -5.00E-01(min: 4.35E-01 max: 4.28E+00 thr: 1.00E-08 time: 4.35E-04 cpus: 1)
+
+
+##############################################################################
+                              Finalization info
+##############################################################################
+
+ Memory peak for process    0 is             1.342 MB
+
+
+ Final time:
+   2019 November 12  17:17:43
+
+
+ Normal termination of ReSpect program
+
+
+real	0m1.850s
+user	0m1.825s
+sys	0m0.012s
