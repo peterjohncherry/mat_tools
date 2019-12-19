@@ -30,7 +30,7 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
         self.nov = self.nvirt * self.nocc
         self.eindex = np.arange(self.nov)
 
-        self.read_1e_eigvals_and_eigvecs("/home/peter/RS_FILES/4C/KEEPERS_TDA/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs("REF/TDA/1el_eigvals")
         self.get_esorted_general()
 
         self.set_arrays()

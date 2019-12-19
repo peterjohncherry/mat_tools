@@ -13,7 +13,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
 
-        self.save_dir = "/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/TXTS/"
+        self.save_dir = "OUTPUT/TXTS/"
         decimal.getcontext().prec = 32
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
@@ -40,7 +40,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2 * self.nov
         self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs(seedname="/home/peter/CALCS/RS_TESTS/TDDFT-os/4C/FULL/RS_FILES/KEEPERS/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="REF/FULL/1el_eigvals")
         self.get_esorted_general()
 
     def read_1e_eigvals_and_eigvecs(self, seedname):

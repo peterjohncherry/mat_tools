@@ -52,7 +52,7 @@ def read_array_info_file(name):
             dim1 = int(line_array[2])
         elif line_array[0] == "datatype":
             datatype = str(line_array[2])
-
+        print(") dim0, dim1, datatype" , dim0, dim1, datatype)
     if dim1 != -1 and dim0 != -1 and datatype != "unread":
         return dim0, dim1, datatype
     else:

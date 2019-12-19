@@ -207,7 +207,7 @@ def check_for_nans(arr_list, name_list, exit_on_nan=True):
                 exit()
 
 
-def save_arrs_to_file(arr_list, arr_names, parent_folder="/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/TXTS/"):
+def save_arrs_to_file(arr_list, arr_names, parent_folder="REF/TXTS/"):
     for ii in range(len(arr_list)):
         np.savetxt(parent_folder+arr_names[ii] + ".txt", arr_list[ii])
 

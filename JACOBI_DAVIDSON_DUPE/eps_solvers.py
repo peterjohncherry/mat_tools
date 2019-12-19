@@ -87,7 +87,7 @@ class Solver:
 
         self.nvirt = self.ndimc * 2 - self.nocc
 
-    def read_full_matrix(self, file_seedname="/home/peter/RS_FILES/4C/TDA/KEEPERS_FULL/full_mat"):
+    def read_full_matrix(self, file_seedname="REF/TDA/full_mat"):
         print("reading in full matrix", file_seedname)
         self.mat_orig = mr.read_fortran_array(file_seedname)
         self.ndim = np.size(self.mat_orig, 0)
