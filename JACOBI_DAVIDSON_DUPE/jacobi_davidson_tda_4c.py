@@ -29,8 +29,9 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
 
         self.nov = self.nvirt * self.nocc
         self.eindex = np.arange(self.nov)
+        self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs("REF/TDA/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs("REF/INPUT/TDA/1el_eigvals")
         self.get_esorted_general()
 
         self.set_arrays()
@@ -86,8 +87,6 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                 else:
                     t_vec = self.get_new_tvec(iev)
 
-                np.savetxt("t_vec_"+str(it+1), t_vec)
-
                 # Orthogonalize t_vec w.r.t. trial space, print warning if orthogonalization seems dubious
                 t_vec, vt_angle = utils.orthonormalize_v_against_mat_check(t_vec, self.vspace)
                 if vt_angle < 1e-8:
@@ -127,6 +126,9 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                 self.r_vecs[:, iteta] = u_hat - ritz_vals[iteta] * self.u_vecs[:, iteta]
                 dnorm[iteta] = la.norm(self.r_vecs[:, iteta])
 
+            np.savetxt("OUTPUT/TDA/ritz_vecs_cycle-" + str(self.cycle) + ".txt", self.r_vecs)
+            np.savetxt("OUTPUT/TDA/dnorm_cycle-" + str(self.cycle) + ".txt", dnorm)
+            np.savetxt("OUTPUT/TDA/ritz_vals_cycle-" + str(self.cycle) + ".txt", ritz_vals)
             self.teta = ritz_vals[:self.nev]
             for ii in range(self.nev):
                 if dnorm[ii] <= self.threshold:
@@ -135,12 +137,16 @@ class JacobiDavidsonTDA4C(eps_solvers.Solver):
                     skip[ii] = False
 
             print("self.teta = ", self.teta)
+
             if False in skip[:self.nev]:
                 print("Not converged on iteration ", it)
                 print("dnorm = ", dnorm, "skip = ", skip)
             else:
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
+                np.savetxt("OUTPUT/TDA/final_ritzvals.txt", self.teta)
+                np.savetxt("OUTPUT/TDA/final_ritzvecs.txt", self.r_vecs)
                 sys.exit("Converged!!")
+            self.cycle += 1
 
     # Find orthogonal complement t_vec of the u_vec using preconditioned matrix ( A - teta*I )
     # t = x.M^{-1}.u_{k} - u_{k}

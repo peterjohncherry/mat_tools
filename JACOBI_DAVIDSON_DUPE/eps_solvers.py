@@ -87,7 +87,7 @@ class Solver:
 
         self.nvirt = self.ndimc * 2 - self.nocc
 
-    def read_full_matrix(self, file_seedname="REF/TDA/full_mat"):
+    def read_full_matrix(self, file_seedname="REF/INPUT/TDA/full_mat"):
         print("reading in full matrix", file_seedname)
         self.mat_orig = mr.read_fortran_array(file_seedname)
         self.ndim = np.size(self.mat_orig, 0)
@@ -108,10 +108,7 @@ class Solver:
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
         evals_1e_all = mr.read_fortran_array(seedname)
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_orig.txt", evals_1e_all)
-
         num_pos_evals = self.nvirt + self.nocc
-        print("num_pos_evals = ", num_pos_evals)
         if self.pe_rot:
             self.evals_1e = np.zeros(2*num_pos_evals, dtype=np.float64)
             self.evals_1e[:num_pos_evals] = evals_1e_all[num_pos_evals:]
@@ -119,6 +116,4 @@ class Solver:
         else:
             self.evals_1e = np.zeros(num_pos_evals, dtype=np.float64)
             self.evals_1e = evals_1e_all[num_pos_evals:]
-
-        np.savetxt("/home/peter/MAT_TOOLS/JACOBI_DAVIDSON_DUPE/evals_post.txt", self.evals_1e)
         self.eindex = np.argsort(self.evals_1e)

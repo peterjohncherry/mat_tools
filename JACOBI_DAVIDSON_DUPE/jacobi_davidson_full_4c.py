@@ -13,7 +13,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         super().__init__(rs_filename, num_eigenvalues, threshold, maxdim_subspace, solver, method, symmetry,
                          pe_rot)
 
-        self.save_dir = "OUTPUT/TXTS/"
+        self.save_dir = "OUTPUT/FULL/"
         decimal.getcontext().prec = 32
         # Guess space arrays - original right-handed guesses
         self.vspace_r = None
@@ -40,7 +40,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         self.ndim = 2 * self.nov
         self.cycle = 1
 
-        self.read_1e_eigvals_and_eigvecs(seedname="REF/FULL/1el_eigvals")
+        self.read_1e_eigvals_and_eigvecs(seedname="REF/INPUT/FULL/1el_eigvals")
         self.get_esorted_general()
 
     def read_1e_eigvals_and_eigvecs(self, seedname):
@@ -106,9 +106,11 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
 
             # Build subspace matrix : v*Av = v*w
             submat = self.build_subspace_matrix()
-            #np.savetxt(self.save_dir + "submat_c" + str(self.cycle) + "_i" + str(submat.shape[1]) + ".txt", submat )
+            # np.savetxt(self.save_dir + "submat_c" + str(self.cycle) + "_i" + str(submat.shape[1]) + ".txt", submat )
             dnorm = self.get_residual_vectors(submat)
-            self.save_array_as_vectors(self.r_vecs, self.save_dir + "r_vecs_c" + str(self.cycle))
+            np.savetxt(self.save_dir + "ritz_vecs_cycle-" + str(self.cycle) + ".txt", self.r_vecs)
+            np.savetxt(self.save_dir + "dnorm_cycle-" + str(self.cycle) + ".txt", dnorm)
+            np.savetxt(self.save_dir + "teta_cycle-" + str(self.cycle) + ".txt", self.teta)
 
             skip = np.ndarray(self.nev, np.bool)
             for ii in range(self.nev):
@@ -125,6 +127,8 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
                 num_rvals = 10
                 self.get_excited_residual_vectors(submat, num_rvals)
                 print("Final eigenvalues = ", np.real(self.teta[:self.nev]))
+                np.savetxt("OUTPUT/FULL/final_ritzvals.txt", self.teta)
+                np.savetxt("OUTPUT/FULL/final_ritzvecs.txt", self.r_vecs)
                 sys.exit("Converged!!")
 
             self.cycle = self.cycle + 1
@@ -408,6 +412,7 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
     def sigma_constructor(self, vec):
         return np.matmul(self.mat_orig, vec)
 
+    # Will print out all the different parts of the subspace, used for checking.
     def save_spaces(self):
         if self.vspace_r is not None:
             self.save_array_as_vectors(self.vspace_r, self.save_dir + "v_vec_r_c"+str(self.cycle))
@@ -426,16 +431,22 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
         if self.wspace_lp is not None:
             self.save_array_as_vectors(self.wspace_lp, self.save_dir + "w_vec_lp_c"+str(self.cycle))
 
+    # Saves a 2d array as column vectors, each vector being stored in a separate file, for inspecting eigenvectors.
     @staticmethod
     def save_array_as_vectors(my_arr, name):
         for ii in range(my_arr.shape[1]):
             np.savetxt(name+"_i"+str(ii)+".txt", my_arr[:, ii])
 
+    # Get the eigenvalues of the matrix by direct diagonalization
     def get_numpy_evals(self):
         evals, evecs = np.linalg.eig(self.mat_orig)
         np.set_printoptions(threshold=sys.maxsize)
         print("numpy evals =\n ", sorted(abs(np.real(evals)), reverse=False))
 
+    # For when you want to look at the ritz vectors (and values) which are used to construct the subspace,
+    # but which are not actually being solved for. e.g., if you're only solving for the 3 lowest eigenvalues,
+    # This routine can be used to inspect the Ritz vectors and values corresponding to the eigenvectors of the subspace
+    # with the 6 lowest eigenvalues.
     def get_excited_residual_vectors(self, submat, num_rvals):
         # Ritz values and Ritz vectors defined in trial vspace
         ritz_vals, ritz_vecs = np.linalg.eig(submat)
@@ -477,9 +488,10 @@ class JacobiDavidsonFull4C(eps_solvers.Solver):
             extended_r_vecs[:, iev] = u_hat - extended_u_vecs[:, iev] * ritz_vals[iev]
             extended_dnorm[iev] = np.linalg.norm(extended_r_vecs[:, iev])
 
-        self.save_array_as_vectors(extended_r_vecs, self.save_dir + "extended_r_vecs_c" + str(self.cycle))
-        np.savetxt(self.save_dir + "extended_d_norm_c" + str(self.cycle), extended_dnorm)
+        # self.save_array_as_vectors(extended_r_vecs, self.save_dir + "extended_r_vecs_c" + str(self.cycle))
+        # np.savetxt(self.save_dir + "extended_d_norm_c" + str(self.cycle), extended_dnorm)
 
+    # This orthonormalizes input vector "t_vec"  with respect to the v_space
     def orthonormalize_wrt_expansion_space(self, t_vec):
         t_vec, good_t_vec = utils.orthonormalize_wrt_mat(t_vec, self.vspace_r)
         if good_t_vec and self.vspace_rp is not None:
